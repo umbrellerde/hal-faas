@@ -9,6 +9,18 @@ spec:
   maxReplicas: 1
   description: Just returns the context and event object, because why not
   image: get_context:latest
+  triggers:
+    default-http:
+      class: ""
+      kind: http
+      name: default-http
+      maxWorkers: 1
+      attributes:
+        ingresses:
+          "0":
+            host: nuclio.local
+            paths:
+              - /get_context
   resources:
     limits:
       nvidia.com/gpu: 1

@@ -6,5 +6,6 @@ def handler(context, event):
         "context": dir(context),
         "contex.worker_id": context.worker_id,
         "context.trigger_name": context.trigger_name,
-        "event": dir(event)
+        "event": dir(event),
+        "event.body": str(event.body)
     }
