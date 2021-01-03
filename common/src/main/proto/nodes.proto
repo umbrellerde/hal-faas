@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package halfaas.proto;
+
+service NodeManager {
+  rpc Create(CreateRequest) returns (CreateResponse) {}
+  rpc Invoke(InvokeRequest) returns (InvokeResponse) {}
+  rpc Stop(StopRequest) returns (StopResponse) {}
+}
+
+message CreateRequest {
+  string image = 1;
+  string options = 2;
+  string command = 3;
+}
+
+message CreateResponse {
+  string name = 1;
+}
+
+message InvokeRequest {
+  string name = 1;
+  string params = 2;
+}
+
+message InvokeResponse {
+  string result = 1;
+}
+
+message StopRequest {
+  string name = 1;
+}
+
+message StopResponse {
+
+}
