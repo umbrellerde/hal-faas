@@ -5,7 +5,10 @@ import io.grpc.ManagedChannelBuilder
 import java.io.Closeable
 import java.util.concurrent.TimeUnit
 
-class Clients {
+/**
+ * Class that holds the connections to all NoMas
+ */
+class NodeClients {
     companion object {
         class NodeClient(private var channel: ManagedChannel) : Closeable {
             private val stub = NodeManagerGrpcKt.NodeManagerCoroutineStub(channel)
