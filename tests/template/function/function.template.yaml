@@ -1,7 +1,7 @@
 apiVersion: "nuclio.io/v1"
 kind: NuclioFunction
 metadata:
-  name: nuclio-function-test-6
+  name: nuclio-function-test-{ID}
 spec:
   handler: main:handler
   runtime: python:3.6
@@ -24,7 +24,7 @@ spec:
       name: default-http
       maxWorkers: 1
       attributes:
-        port: 30007
+        port: {PORT}
   resources:
     limits:
       nvidia.com/gpu: 1
