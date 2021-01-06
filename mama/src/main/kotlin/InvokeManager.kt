@@ -1,4 +1,7 @@
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import mu.KotlinLogging
 import java.util.concurrent.PriorityBlockingQueue
 
@@ -10,7 +13,7 @@ data class Invocation(
     val created: Long = System.currentTimeMillis()
 ) : Comparable<Invocation> {
     override fun compareTo(other: Invocation): Int = when {
-        created != other.created -> (created - other.created) as Int
+        created != other.created -> (created - other.created).toInt()
         else -> workloadName.compareTo(other.workloadName)
     }
 }
@@ -18,54 +21,72 @@ data class Invocation(
 class InvokeManager(val rm: ResourceManager) {
     private val logger = KotlinLogging.logger {}
 
+    val toDoMutex = Mutex()
     val toDo = PriorityBlockingQueue<Invocation>()
 
     suspend fun registerInvocation(inv: Invocation) {
         toDo.add(inv)
-        tryNextInvoke(inv.workloadName)
+        GlobalScope.launch {
+            logger.debug { "Registered Invocation ${inv.workloadName}, trying to invoke it." }
+            tryNextInvoke(inv.workloadName)
+        }
     }
 
     suspend fun tryNextInvoke(workloadName: String) {
-        // TODO Abend Das in einer While Schleife. Und wenn es GAR NICHTS mit der gleichen Workload gibt dann gleichen Accelerator probieren, auch in While schleife.
-        // is there a waiting invocation with the same workloadname?
-        val sameWo = toDo.find { it.workloadName == workloadName }
+        // is there a waiting invocation with the same workloadname? then try it.
+        // If not continue to same accelerator Type.
+        // Last step: just try to run the oldest job. This should generally not start a job
+        // (since this job should have been able to start when it was created)
+        logger.info { "Trying to invoke the next function, workloadName=$workloadName" }
 
-        if (sameWo != null) {
-            val res = rm.tryInvoke(sameWo.workloadName, sameWo.params)
-            if (res != null) {
-                logger.debug { "Found invocation with same workloadName" }
-                sameWo.returnChannel.send(res)
-                toDo.remove(sameWo)
-            }
+        if (toDo.size == 0) {
             return
         }
 
-        // there is not invocation left with the same workloadName
-        // but maybe on the same acceleratorType?
-        val accType = rm.workloads.find { it.name == workloadName }!!.acceleratorType
-        val sameAccType = toDo.find { it.accType == accType && it.workloadName != workloadName }
+        // Current Step:
+        // 0 = same Workload Name
+        // 1 = same Accelerator Type (butt not same workload)
+        // 2 = just generally...
+        var tryStep = 0
 
-        if (sameAccType != null) {
-            val res = rm.tryInvoke(sameAccType.workloadName, sameAccType.params)
-            if (res != null) {
-                logger.debug { "Found invocation with different WorkloadName but same acceleratorType" }
-                sameAccType.returnChannel.send(res)
-                toDo.remove(sameWo)
+        while (tryStep <= 2) {
+            var invocationToDo: Invocation? = null
+            toDoMutex.lock()
+            when (tryStep) {
+                0 -> {
+                    invocationToDo = toDo.find { it.workloadName == workloadName }
+                }
+                1 -> {
+                    val accType = rm.workloads.find { it.name == workloadName }!!.acceleratorType
+                    invocationToDo = toDo.find { it.workloadName != workloadName && it.accType == accType }
+                }
+                2 -> {
+                    invocationToDo = toDo.firstOrNull()
+                }
             }
-            return
-        }
 
-        // this should never work, but lets try anyway:
-        // just try to run the oldest job...
-        val oldest = toDo.firstOrNull()
-        if (oldest != null) {
-            val res = rm.tryInvoke(oldest.workloadName, oldest.params)
-            if (res != null) {
-                logger.debug { "Found invocation: just the oldest one..." }
-                oldest.returnChannel.send(res)
-                toDo.remove(oldest)
+            // Did not find any invocation to do? Try next step
+            if (invocationToDo == null) {
+                tryStep++
+                toDoMutex.unlock()
+                continue
+            } else {
+                // Invocation found. Remove it and let the next coroutine find the next invocation
+                toDo.remove(invocationToDo)
+                toDoMutex.unlock()
             }
-            return
+
+            // Actual Invocation:
+            val res = rm.tryInvoke(invocationToDo.workloadName, invocationToDo.params)
+            if (res == null) {
+                // Invocation failed -> Try next step next
+                tryStep++
+                toDo.add(invocationToDo)
+            } else {
+                // Invocation successful
+                logger.debug { "tryNextInvoke: Invocation on step $tryStep successful!" }
+                invocationToDo.returnChannel.send(res)
+            }
         }
     }
 }

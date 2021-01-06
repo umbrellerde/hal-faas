@@ -24,13 +24,12 @@ class HalFaasServer(val rm: ResourceManager, val im: InvokeManager) : HalFaasGrp
         val accType = rm.workloads.find { it.name == request.workloadName }!!.acceleratorType
         val invoc = Invocation(request.workloadName, request.params, Channel(), accType)
         im.registerInvocation(invoc)
-        logger.info { "Waiting for my turn: $request" }
+        logger.info { "Waiting for my turn: workloadName=${request.workloadName} params=${request.params}" }
         val res = invoc.returnChannel.receive()
-        logger.info { "Received answer for $request! Answer is $res" }
+        logger.info { "Received answer for workloadName=${request.workloadName} params=${request.params}! Answer is $res" }
         GlobalScope.launch {
             im.tryNextInvoke(request.workloadName)
         }
-
         return HalFaasOuterClass.InvokeResponse.newBuilder().setResult(res).build()
     }
 }
