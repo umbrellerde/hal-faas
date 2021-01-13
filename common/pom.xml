@@ -20,6 +20,7 @@
         <protobuf.version>3.14.0</protobuf.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <micrometer.version>1.6.2</micrometer.version>
     </properties>
 
     <repositories>
@@ -101,6 +102,7 @@
     </build>
 
     <dependencies>
+        <!-- Kotlin -->
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-test-junit</artifactId>
@@ -117,6 +119,7 @@
             <artifactId>kotlinx-coroutines-core</artifactId>
             <version>1.4.2</version>
         </dependency>
+        <!-- GRPC -->
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-kotlin-stub</artifactId>
@@ -128,6 +131,7 @@
             <version>${grpc.version}</version>
             <scope>runtime</scope>
         </dependency>
+        <!-- Logging -->
         <dependency>
             <groupId>javax.annotation</groupId>
             <artifactId>javax.annotation-api</artifactId>
@@ -136,12 +140,23 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.5</version>
+            <version>1.7.30</version>
         </dependency>
         <dependency>
             <groupId>io.github.microutils</groupId>
             <artifactId>kotlin-logging</artifactId>
             <version>1.12.0</version>
+        </dependency>
+        <!-- Metrics Collection -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-influx</artifactId>
+            <version>${micrometer.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-atlas</artifactId>
+            <version>${micrometer.version}</version>
         </dependency>
     </dependencies>
 
