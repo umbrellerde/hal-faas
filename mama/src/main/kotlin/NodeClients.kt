@@ -1,3 +1,4 @@
+import hal_faas.monitoring.MetricsCollector
 import halfaas.proto.NodeManagerGrpcKt
 import halfaas.proto.Nodes
 import io.grpc.ManagedChannel
@@ -14,8 +15,11 @@ import kotlin.random.Random
 class NodeClients {
     companion object {
         private val logger = KotlinLogging.logger {}
+        private val createCount = MetricsCollector.registry.counter("worker.created")
+        private val invokeCount = MetricsCollector.registry.counter("worker.invoked")
+        private val stopCount = MetricsCollector.registry.counter("worker.stopped")
 
-        class NodeClient(private var channel: ManagedChannel) : Closeable {
+        class NodeClient(private var channel: ManagedChannel, private val address: String) : Closeable {
             private val stub = NodeManagerGrpcKt.NodeManagerCoroutineStub(channel)
 
             suspend fun create(image: String, options: String, command: String): String {
@@ -26,6 +30,7 @@ class NodeClients {
                 //val response = stub.create(request)
                 //return response.name
                 delay(2000)
+                createCount.increment()
                 return "Container-" + Random.nextInt(10)
             }
 
@@ -36,6 +41,7 @@ class NodeClients {
                 //val response = stub.invoke(request)
                 //return response.result
                 delay(2000)
+                invokeCount.increment()
                 return name
             }
 
@@ -44,6 +50,7 @@ class NodeClients {
                 logger.debug { "Sending stop $name" }
                 // TODO
                 //stub.stop(request)
+                stopCount.increment()
                 delay(2000)
             }
 
@@ -61,7 +68,7 @@ class NodeClients {
                 val split = address.split(":")
                 logger.debug { "Creating a new node for address $split" }
                 val channel = ManagedChannelBuilder.forAddress(split[0], split[1].toInt()).usePlaintext().build()
-                existing = NodeClient(channel)
+                existing = NodeClient(channel, address)
                 nodes[address] = existing
             }
             return existing

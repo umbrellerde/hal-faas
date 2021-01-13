@@ -26,7 +26,7 @@ class MetricsCollector {
             }
         }
 
-        private val registry = InfluxMeterRegistry(config, Clock.SYSTEM)
+        val registry = InfluxMeterRegistry(config, Clock.SYSTEM)
 
         init {
             Runtime.getRuntime().addShutdownHook(
@@ -34,10 +34,6 @@ class MetricsCollector {
                     registry.close()
                 }
             )
-        }
-
-        fun createLongTaskTimer(name: String): LongTaskTimer {
-            return LongTaskTimer.builder(name).register(registry)
         }
     }
 }
