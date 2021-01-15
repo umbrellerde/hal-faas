@@ -48,7 +48,7 @@ fun main(args: Array<String>) {
         //val wl3 = HalFaasOuterClass.InvokeRequest.newBuilder().setWorkloadName("wl1").setParams("wl1-params-3").build()
 
         val jobs = ArrayList<Job>()
-        for (i in 1..5) {
+        for (i in 1..10) {
             jobs.add(GlobalScope.launch {
                 val wl3 = HalFaasOuterClass.InvokeRequest.newBuilder().setWorkloadName("wl1").setParams("wl1-params-$i").build()
                 server.invoke(wl3)

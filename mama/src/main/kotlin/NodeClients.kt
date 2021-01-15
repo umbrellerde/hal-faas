@@ -15,9 +15,9 @@ import kotlin.random.Random
 class NodeClients {
     companion object {
         private val logger = KotlinLogging.logger {}
-        private val createCount = MetricsCollector.registry.counter("worker.created")
-        private val invokeCount = MetricsCollector.registry.counter("worker.invoked")
-        private val stopCount = MetricsCollector.registry.counter("worker.stopped")
+        private val createdCounter = MetricsCollector.registry.counter("worker.created")
+        private val invokedCounter = MetricsCollector.registry.counter("worker.invoked")
+        private val stoppedCounter = MetricsCollector.registry.counter("worker.stopped")
 
         class NodeClient(private var channel: ManagedChannel, private val address: String) : Closeable {
             private val stub = NodeManagerGrpcKt.NodeManagerCoroutineStub(channel)
@@ -30,7 +30,7 @@ class NodeClients {
                 //val response = stub.create(request)
                 //return response.name
                 delay(2000)
-                createCount.increment()
+                createdCounter.increment()
                 return "Container-" + Random.nextInt(10)
             }
 
@@ -41,7 +41,7 @@ class NodeClients {
                 //val response = stub.invoke(request)
                 //return response.result
                 delay(2000)
-                invokeCount.increment()
+                invokedCounter.increment()
                 return name
             }
 
@@ -50,8 +50,8 @@ class NodeClients {
                 logger.debug { "Sending stop $name" }
                 // TODO
                 //stub.stop(request)
-                stopCount.increment()
                 delay(2000)
+                stoppedCounter.increment()
             }
 
             override fun close() {

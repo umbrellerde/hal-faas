@@ -31,6 +31,8 @@ class MetricsCollector {
         init {
             Runtime.getRuntime().addShutdownHook(
                 Thread {
+                    // Just so that everything else can finish first
+                    Thread.sleep(1000)
                     registry.close()
                 }
             )
