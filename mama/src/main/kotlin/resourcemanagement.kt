@@ -195,6 +195,7 @@ class ResourceManager {
         }
 
         // If there is no idle container then try to place one
+        // tryPlaceContainer returns a container that is already BUSY, so no need to keep nodesLock afterwardsS
         val newPlacement = tryPlaceContainer(workloadName)
         nodesLock.unlock()
 
