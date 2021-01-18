@@ -28,10 +28,10 @@ class NodeClients {
                 logger.debug { "Sending create $image" }
                 // TODO
                 //val response = stub.create(request)
-                //return response.name
                 delay(2000)
                 createdCounter.increment()
                 return "Container-" + Random.nextInt(10)
+                //return response.name
             }
 
             suspend fun invoke(name: String, params: String): String {
@@ -39,10 +39,10 @@ class NodeClients {
                 logger.debug { "Sending invoke $name with params $params" }
                 // TODO
                 //val response = stub.invoke(request)
-                //return response.result
                 delay(2000)
                 invokedCounter.increment()
                 return name
+                //return response.result
             }
 
             suspend fun stop(name: String) {

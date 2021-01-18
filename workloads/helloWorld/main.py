@@ -1,7 +1,7 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import argparse
 import json
-
+import time
 
 # Server implementation by https://gist.github.com/bradmontgomery/2219997
 
@@ -11,16 +11,16 @@ class S(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'application/json')
         self.end_headers()
 
-    def do_GET(self):
-        self._set_response()
-        self.wfile.write(json.dumps({'Hello': 'World'}).encode("UTF-8"))
-
     def do_POST(self):
         print("Got request...")
         data_string = self.rfile.read(int(self.headers['Content-Length']))
         data = json.loads(data_string)
+
+        # Operations on data
+        time.sleep(2)
+
         self._set_response()
-        self.wfile.write(json.dumps(data).encode("UTF-8"))
+        self.wfile.write(json.dumps({'request': data}).encode("UTF-8"))
 
     @staticmethod
     def do_DELETE():
@@ -37,7 +37,7 @@ def run(server_class=HTTPServer, handler_class=S, addr="localhost", port=8000):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run a simple HTTP server")
+    parser = argparse.ArgumentParser(description="Hello World HTTP server")
     parser.add_argument(
         "-l",
         "--listen",
