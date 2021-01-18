@@ -9,9 +9,7 @@ service NodeManager {
 }
 
 message CreateRequest {
-  string image = 1;
-  string options = 2;
-  string command = 3;
+  string workloadName = 1;
 }
 
 message CreateResponse {

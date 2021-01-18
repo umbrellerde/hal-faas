@@ -1,10 +1,13 @@
+import os
+import signal
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import argparse
 import json
 import time
+import threading
+
 
 # Server implementation by https://gist.github.com/bradmontgomery/2219997
-
 class S(BaseHTTPRequestHandler):
     def _set_response(self):
         self.send_response(200)
@@ -20,12 +23,18 @@ class S(BaseHTTPRequestHandler):
         time.sleep(2)
 
         self._set_response()
-        self.wfile.write(json.dumps({'request': data}).encode("UTF-8"))
+        self.wfile.write(json.dumps({'request': data, 'time': time.localtime()}).encode("UTF-8"))
 
-    @staticmethod
-    def do_DELETE():
-        print("Exiting...")
-        exit(1)
+    def do_DELETE(self):
+        threading.Thread(target=exit_func).start()
+        self._set_response()
+
+
+def exit_func():
+    print("Exiting in 1s")
+    time.sleep(1)
+    print("Exiting!")
+    os.kill(os.getpid(), signal.SIGINT)
 
 
 def run(server_class=HTTPServer, handler_class=S, addr="localhost", port=8000):

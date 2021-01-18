@@ -126,7 +126,7 @@ class ResourceManager {
 
             // Here the new container is created
             val containerName = NodeClients.getNode(node.address)
-                .create(workload.dockerImage, workload.dockerOptions, workload.dockerParams)
+                .create(workload.name)
 
             // Save this new container
             // Mark it as busy because it will be used immediately by invoke

@@ -22,10 +22,9 @@ class NodeClients {
         class NodeClient(private var channel: ManagedChannel, private val address: String) : Closeable {
             private val stub = NodeManagerGrpcKt.NodeManagerCoroutineStub(channel)
 
-            suspend fun create(image: String, options: String, command: String): String {
-                val request = Nodes.CreateRequest.newBuilder()
-                    .setImage(image).setOptions(options).setCommand(command).build()
-                logger.debug { "Sending create $image" }
+            suspend fun create(workload: String): String {
+                val request = Nodes.CreateRequest.newBuilder().setWorkloadName(workload).build()
+                logger.debug { "Sending create $workload" }
                 // TODO
                 //val response = stub.create(request)
                 delay(2000)
