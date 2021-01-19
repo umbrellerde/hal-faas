@@ -1,12 +1,13 @@
 import halfaas.proto.Nodes
-import java.io.File
+import kotlinx.coroutines.delay
 
 suspend fun main() {
     //File("workloads/helloWorld").walk().forEach { println(it) }
-    val service = NodeManagerService(10000, 10500)
-    val res = service.create(Nodes.CreateRequest.newBuilder().setWorkloadName("helloWorld").build())
-    Thread.sleep(1000)
-    service.invoke(Nodes.InvokeRequest.newBuilder().setName(res.name).setParams("{'test': 'abc'}").build())
-    Thread.sleep(1000)
-    service.stop(Nodes.StopRequest.newBuilder().setName(res.name).build())
+    val service = NodeManagerService()
+    val pid = service.create(Nodes.CreateRequest.newBuilder().setWorkloadName("helloWorld").build())
+    delay(1000)
+    val resp =
+        service.invoke(Nodes.InvokeRequest.newBuilder().setName(pid.name).setParams("{\"test\": \"abc\"}").build())
+    delay(1000)
+    val delResp = service.stop(Nodes.StopRequest.newBuilder().setName(pid.name).build())
 }

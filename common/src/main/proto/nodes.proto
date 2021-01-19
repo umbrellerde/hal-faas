@@ -10,6 +10,7 @@ service NodeManager {
 
 message CreateRequest {
   string workloadName = 1;
+  string accelerator = 2;
 }
 
 message CreateResponse {

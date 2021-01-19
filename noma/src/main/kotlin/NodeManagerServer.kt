@@ -2,9 +2,9 @@ import io.grpc.Server
 import io.grpc.ServerBuilder
 import mu.KotlinLogging
 
-class NodeManagerServer(private val port: Int, workloadPortsStart: Int, workloadPortsEnd: Int) {
+class NodeManagerServer(private val port: Int) {
     private val logger = KotlinLogging.logger {}
-    val server: Server = ServerBuilder.forPort(port).addService(NodeManagerService(workloadPortsStart, workloadPortsEnd)).build()
+    val server: Server = ServerBuilder.forPort(port).addService(NodeManagerService()).build()
 
     fun start() {
         server.start()

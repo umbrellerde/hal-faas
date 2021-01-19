@@ -14,43 +14,43 @@ fun main(args: Array<String>) {
     val rm = ResourceManager()
     rm.nodes.add(
         Node(
-            "node1:5678", arrayListOf(
+            "localhost:1555", arrayListOf(
                 Accelerator("gpu", "gpu-1-1", 1000, "Mb", ArrayList()),
                 Accelerator("gpu", "gpu-1-2", 1000, "Mb", ArrayList()),
             )
         )
     )
-    rm.nodes.add(
-        Node(
-            "node2:5678", arrayListOf(
-                Accelerator("gpu", "gpu-2-1", 1000, "Mb", ArrayList()),
-                Accelerator("gpu", "gpu-2-2", 1000, "Mb", ArrayList()),
-            )
-        )
-    )
+//    rm.nodes.add(
+//        Node(
+//            "localhost:1555", arrayListOf(
+//                Accelerator("gpu", "gpu-2-1", 1000, "Mb", ArrayList()),
+//                Accelerator("gpu", "gpu-2-2", 1000, "Mb", ArrayList()),
+//            )
+//        )
+//    )
 
     val im = InvokeManager(rm)
 
     val server = HalFaasServer(rm, im)
 
     runBlocking {
-        val regReq1 = HalFaasOuterClass.RegisterWorkloadRequest.newBuilder().setWorkloadName("wl1").setDockerImage("test1").setAcceleratorAmount(500).setAcceleratorType("gpu").build()
+        val regReq1 = HalFaasOuterClass.RegisterWorkloadRequest.newBuilder().setWorkloadName("helloWorld").setDockerImage("test1").setAcceleratorAmount(250).setAcceleratorType("gpu").build()
         server.registerWorkload(regReq1)
-        val regReq2 = HalFaasOuterClass.RegisterWorkloadRequest.newBuilder().setWorkloadName("wl2").setDockerImage("test2").setAcceleratorAmount(500).setAcceleratorType("gpu").build()
-        server.registerWorkload(regReq2)
+//        val regReq2 = HalFaasOuterClass.RegisterWorkloadRequest.newBuilder().setWorkloadName("helloWorld").setDockerImage("test2").setAcceleratorAmount(500).setAcceleratorType("gpu").build()
+//        server.registerWorkload(regReq2)
 
-        val wl1 = HalFaasOuterClass.InvokeRequest.newBuilder().setWorkloadName("wl1").setParams("wl1-params").build()
-        server.invoke(wl1)
-
-        val wl2 = HalFaasOuterClass.InvokeRequest.newBuilder().setWorkloadName("wl2").setParams("wl2-params").build()
-        server.invoke(wl2)
+//        val wl1 = HalFaasOuterClass.InvokeRequest.newBuilder().setWorkloadName("wl1").setParams("wl1-params").build()
+//        server.invoke(wl1)
+//
+//        val wl2 = HalFaasOuterClass.InvokeRequest.newBuilder().setWorkloadName("wl2").setParams("wl2-params").build()
+//        server.invoke(wl2)
 
         //val wl3 = HalFaasOuterClass.InvokeRequest.newBuilder().setWorkloadName("wl1").setParams("wl1-params-3").build()
 
         val jobs = ArrayList<Job>()
-        for (i in 1..10) {
+        for (i in 1..4) {
             jobs.add(GlobalScope.launch {
-                val wl3 = HalFaasOuterClass.InvokeRequest.newBuilder().setWorkloadName("wl1").setParams("wl1-params-$i").build()
+                val wl3 = HalFaasOuterClass.InvokeRequest.newBuilder().setWorkloadName("helloWorld").setParams("{\"test\": \"abc\"}").build()
                 server.invoke(wl3)
             })
         }

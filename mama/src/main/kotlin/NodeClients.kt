@@ -22,34 +22,26 @@ class NodeClients {
         class NodeClient(private var channel: ManagedChannel, private val address: String) : Closeable {
             private val stub = NodeManagerGrpcKt.NodeManagerCoroutineStub(channel)
 
-            suspend fun create(workload: String): String {
-                val request = Nodes.CreateRequest.newBuilder().setWorkloadName(workload).build()
-                logger.debug { "Sending create $workload" }
-                // TODO
-                //val response = stub.create(request)
-                delay(2000)
+            suspend fun create(workload: String, accelerator: String): String {
+                val request = Nodes.CreateRequest.newBuilder().setWorkloadName(workload).setAccelerator(accelerator).build()
+                logger.debug { "Sending create $workload on accelerator $accelerator" }
+                val response = stub.create(request)
                 createdCounter.increment()
-                return "Container-" + Random.nextInt(10)
-                //return response.name
+                return response.name
             }
 
             suspend fun invoke(name: String, params: String): String {
                 val request = Nodes.InvokeRequest.newBuilder().setName(name).setParams(params).build()
                 logger.debug { "Sending invoke $name with params $params" }
-                // TODO
-                //val response = stub.invoke(request)
-                delay(2000)
+                val response = stub.invoke(request)
                 invokedCounter.increment()
-                return name
-                //return response.result
+                return response.result
             }
 
             suspend fun stop(name: String) {
                 val request = Nodes.StopRequest.newBuilder().setName(name).build()
                 logger.debug { "Sending stop $name" }
-                // TODO
-                //stub.stop(request)
-                delay(2000)
+                stub.stop(request)
                 stoppedCounter.increment()
             }
 
