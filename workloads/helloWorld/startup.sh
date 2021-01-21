@@ -1,2 +1,3 @@
 #!/usr/bin/env bash
-python main.py "$@"
+# could also just run python directly.
+pipenv run python main.py "$@"

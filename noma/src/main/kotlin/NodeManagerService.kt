@@ -26,10 +26,10 @@ class NodeManagerService() : NodeManagerGrpcKt.NodeManagerCoroutineImplBase() {
     }
 
     override suspend fun create(request: Nodes.CreateRequest): Nodes.CreateResponse {
-        logger.info { "Create was called with $request" }
+        logger.info { "Create was called with ${request.toString().replace("\n", " ")}" }
         var process: Process? = null
         try {
-            val pb = ProcessBuilder("bash", "startup.sh", request.accelerator)
+            val pb = ProcessBuilder("bash", "startup.sh", request.accelerator, request.acceleratorAmount.toString())
             pb.directory(File("workloads/${request.workloadName}"))
             pb.redirectError(ProcessBuilder.Redirect.INHERIT)
             process = pb.start()

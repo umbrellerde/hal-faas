@@ -10,6 +10,7 @@ def eprint(*args, **kwargs):
 
 if __name__ == '__main__':
     accelerator = sys.argv[1]
+    amount = sys.argv[2]
     try:
         while True:
             params = input()
@@ -19,6 +20,7 @@ if __name__ == '__main__':
             result = {
                 'request': request,
                 'accelerator': accelerator,
+                'amount': amount,
                 'pid': os.getppid()
             }
             time.sleep(2)

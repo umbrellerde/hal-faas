@@ -22,8 +22,8 @@ class NodeClients {
         class NodeClient(private var channel: ManagedChannel, private val address: String) : Closeable {
             private val stub = NodeManagerGrpcKt.NodeManagerCoroutineStub(channel)
 
-            suspend fun create(workload: String, accelerator: String): String {
-                val request = Nodes.CreateRequest.newBuilder().setWorkloadName(workload).setAccelerator(accelerator).build()
+            suspend fun create(workload: String, accelerator: String, acceleratorAmount: Int): String {
+                val request = Nodes.CreateRequest.newBuilder().setWorkloadName(workload).setAccelerator(accelerator).setAcceleratorAmount(acceleratorAmount).build()
                 logger.debug { "Sending create $workload on accelerator $accelerator" }
                 val response = stub.create(request)
                 createdCounter.increment()

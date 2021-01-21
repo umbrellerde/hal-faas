@@ -11,6 +11,7 @@ service NodeManager {
 message CreateRequest {
   string workloadName = 1;
   string accelerator = 2;
+  uint32 acceleratorAmount = 3;
 }
 
 message CreateResponse {

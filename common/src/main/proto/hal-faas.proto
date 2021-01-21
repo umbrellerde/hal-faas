@@ -11,9 +11,6 @@ message RegisterWorkloadRequest {
   string workloadName = 1;
   string acceleratorType = 2;
   int32 acceleratorAmount = 3;
-  string dockerImage = 4;
-  string dockerOptions = 5;
-  string dockerParams = 6;
 }
 
 message RegisterWorkloadResponse {

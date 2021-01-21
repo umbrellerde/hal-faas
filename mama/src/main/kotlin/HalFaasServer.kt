@@ -17,10 +17,7 @@ class HalFaasServer(val rm: ResourceManager, val im: InvokeManager) : HalFaasGrp
         rm.workloads.add(Workload(
             request.workloadName,
             request.acceleratorType,
-            request.acceleratorAmount,
-            request.dockerImage,
-            request.dockerOptions,
-            request.dockerParams
+            request.acceleratorAmount
         ))
         return HalFaasOuterClass.RegisterWorkloadResponse.getDefaultInstance()
     }
@@ -30,7 +27,7 @@ class HalFaasServer(val rm: ResourceManager, val im: InvokeManager) : HalFaasGrp
         val accType = rm.workloads.find { it.name == request.workloadName }!!.acceleratorType
         val invoc = Invocation(request.workloadName, request.params, Channel(), accType)
         im.registerInvocation(invoc)
-        logger.info { "Waiting for my turn: workloadName=${request.workloadName} params=${request.params}" }
+        logger.info { "Registered Invocation, waiting. workloadName=${request.workloadName} params=${request.params}" }
         val res = invoc.returnChannel.receive()
         logger.info { "Received answer for workloadName=${request.workloadName} params=${request.params}! Answer is $res" }
         GlobalScope.launch {

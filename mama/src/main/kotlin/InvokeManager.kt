@@ -37,7 +37,7 @@ class InvokeManager(val rm: ResourceManager) {
         // If not continue to same accelerator Type.
         // Last step: just try to run the oldest job. This should generally not start a job
         // (since this job should have been able to start when it was created)
-        logger.info { "Trying to invoke the next function, workloadName=$workloadName" }
+        logger.debug { "Trying to invoke the next function, workloadName=$workloadName" }
 
         if (toDo.size == 0) {
             return

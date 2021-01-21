@@ -1,6 +1,6 @@
 ### Mama
 
-- Put next invocation into one class
+- Put next invocation into one class for more relevant invocations
 - (CreateWorkload: put Stuff into minio)
 
 ### Noma
