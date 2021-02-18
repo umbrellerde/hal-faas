@@ -22,7 +22,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <micrometer.version>1.6.2</micrometer.version>
         <kotlin.version>1.4.21</kotlin.version>
-        <serialization.version>1.0.1</serialization.version>
+        <serialization.version>1.0.0</serialization.version>
     </properties>
 
     <repositories>
@@ -125,17 +125,7 @@
                 </executions>
                 <configuration>
                     <jvmTarget>1.8</jvmTarget>
-                    <compilerPlugins>
-                        <plugin>kotlinx-serialization</plugin>
-                    </compilerPlugins>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.jetbrains.kotlin</groupId>
-                        <artifactId>kotlin-maven-serialization</artifactId>
-                        <version>${kotlin.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -186,12 +176,6 @@
             <artifactId>kotlinx-coroutines-core</artifactId>
             <version>1.4.2</version>
         </dependency>
-        <!-- Serialization -->
-        <dependency>
-            <groupId>org.jetbrains.kotlinx</groupId>
-            <artifactId>kotlinx-serialization-json-jvm</artifactId>
-            <version>${serialization.version}</version>
-        </dependency>
         <!-- GRPC -->
         <dependency>
             <groupId>io.grpc</groupId>
@@ -231,16 +215,16 @@
             <artifactId>micrometer-registry-atlas</artifactId>
             <version>${micrometer.version}</version>
         </dependency>
-        <!-- RabbitMQ -->
-        <dependency>
-            <groupId>com.rabbitmq</groupId>
-            <artifactId>amqp-client</artifactId>
-            <version>5.10.0</version>
-        </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jdk8</artifactId>
             <version>${kotlin.version}</version>
+        </dependency>
+        <!-- Serialization -->
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>klaxon</artifactId>
+            <version>5.4</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
