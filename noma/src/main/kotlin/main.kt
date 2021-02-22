@@ -5,8 +5,8 @@ import com.beust.klaxon.Parser
 import mu.KotlinLogging
 
 fun main(args: Array<String>) {
-//    val logger = KotlinLogging.logger {}
-//    val c = BedrockClient()
+    val logger = KotlinLogging.logger {}
+    val c = BedrockClient()
 //    c.createInvocation(Invocation("onnx", "yolov3", InvocationParams("I have no idea what i'm doing")))
 //
 //    println(c.consumeInvocation(workload = "syolov3"))
@@ -19,11 +19,7 @@ fun main(args: Array<String>) {
 //    val parser = Klaxon().parser()
 //    val json = parser.parse(jsonString) as JsonObject
 //    println((json["rows"] as JsonArray<*>)[0])
-
-    val query = """
-        Abc
-        def
-    """.trimIndent() + "\n\n"
-    print(query.toCharArray())
-    print("Fin")
+//    val all = c.runCommandJson("Query\nquery: select * from foo where foo=3;\nformat:json\n\n")
+//    println(c.turnBedrockJsonToListOfList(all.response))
+    var res = c.initializeDatasbase()
 }
