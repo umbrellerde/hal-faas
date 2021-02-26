@@ -1,19 +1,9 @@
 import com.beust.klaxon.JsonArray
 import com.beust.klaxon.JsonObject
 import com.beust.klaxon.Klaxon
-import kotlinx.coroutines.delay
 import mu.KotlinLogging
 import java.lang.RuntimeException
 import java.net.Socket
-import kotlin.time.ExperimentalTime
-import kotlin.time.seconds
-
-data class InvocationParams(val payload: String)
-
-data class Invocation(val runtime: String, val workload: String, val params: InvocationParams)
-
-@ExperimentalTime
-val runtimeTimeout = 20.seconds
 
 /**
  * Implementation according to https://bedrockdb.com/jobs.html
@@ -36,11 +26,12 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
             false
         }
     }
+
     data class BedrockJobResponse(val data: InvocationParams, val jobID: java.lang.Long, val name: String)
-    data class ConsumeInvocation(val inv: Invocation, val status: Int)
-    fun consumeInvocation(runtime: String = "*", workload: String = "*", timeout: Int = 3600): ConsumeInvocation {
-        logger.debug { "ConsumeInvocation: $runtime, $workload, $timeout" }
-        val message = "GetJob\nname: $runtime.$workload\nconnection: wait\ntimeout: $timeout\n\n"
+
+    fun consumeInvocation(runtime: String = "*", workload: String = "*", timeout_s: Int = 3600): ConsumeInvocation {
+        logger.debug { "ConsumeInvocation: $runtime, $workload, $timeout_s" }
+        val message = "GetJob\nname: $runtime.$workload\nconnection: wait\ntimeout: $timeout_s\n\n"
         val res = runCommand(message)
         return if (res.status == 200) {
             val rawResponse = Klaxon().parse<BedrockJobResponse>(res.payload)!!
@@ -63,7 +54,6 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
         }
     }
 
-    data class RuntimeImplementation(val acceleratorType: String, val name: String, val location: String)
     /**
      * Get the  location of the runImpl for this acceleratorType from the database
      */
@@ -71,8 +61,7 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
         val queryRuntime =
             "Query\nquery: select location from runtime_impl" +
                     "where runtime_id=(select runtime_id from runtime where name='$runtimeName') " +
-                    "and acceleratorType=$acceleratorType" +
-                    "\nformat:json\n\n"
+                    "and acceleratorType=$acceleratorType;\nformat:json\n\n"
         val runtimeResponse = runCommandJson(queryRuntime)
         if (runtimeResponse.status != 200) {
             throw RuntimeException("Got status != 200 from query $queryRuntime. Response=${runtimeResponse.debugInformation}")
@@ -81,40 +70,60 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
         return RuntimeImplementation(acceleratorType, runtimeName, json[0][0])
     }
 
-    data class ImplementationAndInvocation(val inv: Invocation, val runtime: RuntimeImplementation)
-    @ExperimentalTime
-    suspend fun getNextRuntimeAndInvocationToStart(acceleratorType: String): ImplementationAndInvocation {
-        //TODO
+    fun getNextRuntimeAndInvocationToStart(acceleratorType: String, acceleratorAmount: Int):
+            ImplementationAndInvocation {
+        // List of all runtimes that can be run on this acceleratorType
         val queryRuntime =
             "Query\nquery: select runtime.name from runtime " +
                     "left join runtime_impl on runtime_impl.runtime_id = runtime.runtime_id" +
-                    "where runtime_impl.accelerator_type='$acceleratorType'"
+                    "where runtime_impl.accelerator_type='$acceleratorType';\nformat: json\n\n"
         val jsonResponse = runCommandJson(queryRuntime)
         val runtimes = turnBedrockJsonToListOfList(jsonResponse.response)
+
         for (runtime in runtimes) {
             val runtimeName = runtime[0]
-            val queryJobs = "Query\nquery: select name from jobs where name GLOB $runtimeName.*"
-            val res = runCommand(queryJobs)
-            if (res.payload.isNotEmpty()) {
-                val inv = consumeInvocation(runtime = runtimeName, timeout = 5)
-                if (inv.status != 200)
-                    continue
-                return ImplementationAndInvocation(inv.inv, getRuntimeImplementation(acceleratorType, runtimeName))
+            // TODO maybe just consume an invocation with timeout 0?
+            //List of all workloads that can be run on this runtime with this acceleratorAmount
+            logger.debug { "Searching for invocations for runtime $runtimeName" }
+            val queryWorkloads =
+                    "Query:\n" +
+                    "query: select name from workload_impl " +
+                    "left join runtime_impl on runtime_impl.runtime_impl_id = workload_impl.runtime_impl_id " +
+                    "where workload_impl.accelerator_amount > $acceleratorAmount" +
+                    ";\nformat: json\n\n"
+            val availWorkloads = turnBedrockJsonToListOfList(runCommandJson(queryWorkloads).response)
+            for (job in availWorkloads) {
+                logger.debug { "Searching for invocations for workload ${job[0]} on runtime $runtimeName" }
+                val queryJobs = "Query\nquery: select name from jobs where name = $runtimeName.${job[0]};\nformat: json\n\n"
+                val availJobs = runCommand(queryJobs)
+                if (availJobs.payload.isNotEmpty()) {
+                    val inv = consumeInvocation(runtime = runtimeName, timeout_s = 5)
+                    if (inv.status != 200)
+                        continue
+                    return ImplementationAndInvocation(
+                        true, inv.inv, getRuntimeImplementation(
+                            acceleratorType,
+                            runtimeName
+                        )
+                    )
+                }
             }
         }
-        logger.info { "There are no Runtimes that this accelerator can run at the moment. Waiting 20s and trying again" }
-        delay(runtimeTimeout.toLongMilliseconds())
-        return getNextRuntimeAndInvocationToStart(acceleratorType)
+        return ImplementationAndInvocation(
+            false,
+            Invocation("", "", InvocationParams("")),
+            RuntimeImplementation("", "", "")
+        )
     }
 
-    
 
     private data class ParsedResponse(val status: Int, val payload: String, val debugInformation: String)
+
     /**
      * call this instead of reading the response from the socket
      */
     private fun parseResponse(): ParsedResponse {
-        val debugInformation: java.lang.StringBuilder = java.lang.StringBuilder().append(reader.readLine())
+        val debugInformation = StringBuilder().append(reader.readLine())
         val status = debugInformation.substring(0, 3).toInt()
         while (true) {
             val line = reader.readLine()
@@ -133,7 +142,7 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
                     // This is weird
                     return ParsedResponse(status, "", debugInformation.toString())
                 }
-                else -> debugInformation.append("\n" + line)
+                else -> debugInformation.append(line + "\n")
             }
         }
     }
@@ -145,9 +154,6 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
 
     data class JsonResponse(val status: Int, val response: JsonObject, val debugInformation: String)
 
-    /**
-     * select $what from $from;
-     */
     fun runCommandJson(query: String): JsonResponse {
         val res = runCommand(query)
         val builder = java.lang.StringBuilder().append(res.payload)
@@ -174,7 +180,17 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
 
     fun initializeDatasbase() {
         createTable("runtime", "runtime_id integer primary key autoincrement, name text not null")
-        createTable("runtime_impl", "runtime_impl_id integer primary key autoincrement, accelerator_type text not null, location text not null, runtime_id int, Foreign Key (runtime_id) References runtime(runtime_id)")
+        parseResponse()
+        createTable(
+            "runtime_impl",
+            "runtime_impl_id integer primary key autoincrement, accelerator_type text not null, location text not null, runtime_id int, Foreign Key (runtime_id) References runtime(runtime_id)"
+        )
+        parseResponse()
+        createTable(
+            "workload_impl",
+            "workload_impl_id integer primary key autoincrement, accelerator_amount integer not null, runtime_impl_id" +
+                    " integer, Foreign Key (runtime_impl_id) References runtime_impl(runtime_impl_id)"
+            )
         println("Initialized Database: ${parseResponse()}")
         // Query: insert into runtime (name) values ('test'); hat lastInsertRowID: 1
         // Query: insert into runtime_impl (accelerator_type, location, runtime_id) values ('acc', 'loc', 1);

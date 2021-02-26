@@ -1,5 +1,3 @@
-import halfaas.proto.NodeManagerGrpcKt
-import halfaas.proto.Nodes
 import mu.KotlinLogging
 import java.io.*
 import java.lang.Exception
@@ -21,12 +19,13 @@ class Processes {
             )
         }
 
-        fun startProcess(workloadName: String, accelerator: String, acceleratorAmount: String): String {
-            logger.info { "Create was called with $workloadName on $accelerator (Qty: $acceleratorAmount)" }
+        // TODO maybe the acceleratorAmount can be stored in the runtime? Although it might depend on the accelerator chosen (older model gets more resources etc??)
+        fun startProcess(runtime: RuntimeImplementation, accelerator: String, acceleratorAmount: String): String {
+            logger.info { "Create was called with $runtime on $accelerator (Qty: $acceleratorAmount)" }
             var process: Process? = null
             try {
                 val pb = ProcessBuilder("bash", "startup.sh", accelerator, acceleratorAmount)
-                pb.directory(File("workloads/$workloadName"))
+                pb.directory(File("runtimes/${runtime.location}"))
                 pb.redirectError(ProcessBuilder.Redirect.INHERIT)
                 process = pb.start()
             } catch (e: Exception) {
