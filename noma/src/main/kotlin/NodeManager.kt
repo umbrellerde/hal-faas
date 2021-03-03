@@ -1,6 +1,4 @@
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import mu.KotlinLogging
 import kotlin.time.ExperimentalTime
 import kotlin.time.minutes
@@ -19,19 +17,24 @@ class NodeManager {
         "gpu-1" to 500,
         "gpu-2" to 500
     )
+    private var job: Job
     init {
-        acceleratorTypes.forEach { accelerator -> registerFreedResources(accelerator.value,
-            acceleratorCurrentlyFree[accelerator.key]!!) }
-        GlobalScope.launch {
-            acceleratorCurrentlyFree.forEach { accelerator ->
-                logger.debug { "Trying to start new Resources for accelerator $accelerator" }
-                if (accelerator.value > 0) {
-                    startNewResources(accelerator.key, accelerator.value)
+//        acceleratorTypes.forEach { accelerator -> registerFreedResources(accelerator.value,
+//            acceleratorCurrentlyFree[accelerator.key]!!) }
+        job = GlobalScope.launch {
+            while (isActive) {
+                acceleratorCurrentlyFree.forEach { accelerator ->
+                    logger.debug { "Trying to start new Resources for accelerator $accelerator" }
+                    if (accelerator.value > 0) {
+                        startNewResources(accelerator.key, accelerator.value)
+                    }
+                }
+                val waitForNewObjects = 15.seconds
+                logger.debug { "Waiting for $waitForNewObjects to start new resources on this node" }
+                if (isActive) {
+                    delay(waitForNewObjects)
                 }
             }
-            val waitForNewObjects = 30.seconds
-            logger.debug { "Waiting for $waitForNewObjects to start new resources on this node" }
-            delay(waitForNewObjects)
         }
     }
 
@@ -48,7 +51,7 @@ class NodeManager {
     }
 
     private fun startNewResources(accelerator: String, amount: Int) {
-        logger.info { "Trying to start new runtime_implementation on $accelerator, amount=$amount" }
+        logger.debug { "Trying to start new runtime_implementation on $accelerator, amount=$amount" }
         val acceleratorType = acceleratorTypes[accelerator]
         synchronized(acceleratorCurrentlyFree) {
             val nextRInv = bc.getNextRuntimeAndInvocationToStart(acceleratorType!!, amount)
@@ -59,5 +62,9 @@ class NodeManager {
                 Runner(accelerator, amount, nextRInv, this)
             }
         }
+    }
+
+    suspend fun close() {
+        job.cancelAndJoin()
     }
 }

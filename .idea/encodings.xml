@@ -2,6 +2,9 @@
 <project version="4">
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/common/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/mama/src/main/kotlin" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/mama/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/noma/src/main/kotlin" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/noma/src/main/resources" charset="UTF-8" />
   </component>
 </project>

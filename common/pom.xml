@@ -20,7 +20,6 @@
         <protobuf.version>3.14.0</protobuf.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <micrometer.version>1.6.2</micrometer.version>
         <kotlin.version>1.4.21</kotlin.version>
         <serialization.version>1.0.0</serialization.version>
     </properties>
@@ -203,17 +202,6 @@
             <groupId>io.github.microutils</groupId>
             <artifactId>kotlin-logging</artifactId>
             <version>1.12.0</version>
-        </dependency>
-        <!-- Metrics Collection -->
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-influx</artifactId>
-            <version>${micrometer.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-atlas</artifactId>
-            <version>${micrometer.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>

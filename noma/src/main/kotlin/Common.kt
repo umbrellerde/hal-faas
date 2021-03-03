@@ -1,4 +1,4 @@
-data class InvocationParams(val payload: String)
+data class InvocationParams(val payload: String) // callbackUrl to POST the Results to
 
 data class Invocation(val runtime: String, val workload: String, val params: InvocationParams)
 

@@ -1,3 +1,4 @@
+import com.beust.klaxon.Klaxon
 import mu.KotlinLogging
 import java.io.*
 import java.lang.Exception
@@ -41,10 +42,11 @@ class Processes {
             return process.pid().toString()
         }
 
-        fun invoke(name: String, params: String): String {
-            logger.info { "Invoke was called on $name with params: $params" }
+        fun invoke(name: String, inv: Invocation): String {
+            logger.info { "Invoke was called on $name with params: $inv" }
             val process = processes.find { it.pid().toString() == name }!!
-            process.outputStream.write("$params\n".toByteArray())
+            val json = Klaxon().toJsonString(inv).replace("\n", "")
+            process.outputStream.write("$json\n".toByteArray())
             process.outputStream.flush()
             return process.inputStream.bufferedReader().readLine()
         }
