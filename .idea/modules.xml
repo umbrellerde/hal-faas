@@ -2,10 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/benchmark-client/benchmark-client.iml" filepath="$PROJECT_DIR$/benchmark-client/benchmark-client.iml" />
       <module fileurl="file://$PROJECT_DIR$/common/common.iml" filepath="$PROJECT_DIR$/common/common.iml" />
       <module fileurl="file://$PROJECT_DIR$/hal-faas.iml" filepath="$PROJECT_DIR$/hal-faas.iml" />
       <module fileurl="file://$PROJECT_DIR$/runtimes/helloWorld/helloWorld.iml" filepath="$PROJECT_DIR$/runtimes/helloWorld/helloWorld.iml" />
-      <module fileurl="file://$PROJECT_DIR$/mama/mama.iml" filepath="$PROJECT_DIR$/mama/mama.iml" />
       <module fileurl="file://$PROJECT_DIR$/noma/noma.iml" filepath="$PROJECT_DIR$/noma/noma.iml" />
     </modules>
   </component>

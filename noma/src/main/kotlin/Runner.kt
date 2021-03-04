@@ -56,6 +56,8 @@ class Runner(accelerator: String, acceleratorAmount: Int, implInv: Implementatio
     }
 
     fun invoke(inv: Invocation) {
-        logger.info { "Process called with $inv, returned ${Processes.invoke(pid, inv)}" }
+        val response = Processes.invoke(pid, inv)
+        logger.info { "Process called with $inv, returned $response" }
+        ResultsHandler.returnResult(inv, response)
     }
 }

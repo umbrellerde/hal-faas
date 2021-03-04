@@ -38,7 +38,7 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
             val splitName = rawResponse.name.split(".")
             ConsumeInvocation(Invocation(splitName[0], splitName[1], rawResponse.data), 200)
         } else {
-            ConsumeInvocation(Invocation(runtime, workload, InvocationParams("")), res.status)
+            ConsumeInvocation(Invocation(runtime, workload, InvocationParams("", "")), res.status)
         }
     }
 
@@ -114,7 +114,7 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
         }
         return ImplementationAndInvocation(
             false,
-            Invocation("", "", InvocationParams("")),
+            Invocation("", "", InvocationParams("", "")),
             RuntimeImplementation("", "", "")
         )
     }
@@ -193,6 +193,15 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
     }
 
     fun initializeDatasbase() {
+        // Check if the first table already exists, if yes skip this
+        var resJson = turnBedrockJsonToListOfList(runCommandJson("Query\n" +
+                "query: select count(*) from sqlite_master where type='table' and name='runtime';\n" +
+                "format: json\n\n").response)
+        if (resJson[0][0].toInt() == 1) {
+            logger.info { "Database is already initialized..." }
+            return
+        }
+
         var res = createTable("runtime", "runtime_id integer primary key autoincrement, name text not null")
         logger.info { "Create runtime: $res" }
         res = createTable(
