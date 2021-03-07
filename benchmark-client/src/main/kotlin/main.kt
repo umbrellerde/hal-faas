@@ -2,7 +2,7 @@ import mu.KotlinLogging
 
 fun main() {
     val logger = KotlinLogging.logger {}
-    val server = ResultsCollectorServer()
+    val server = ResultsCollector()
     val c = BedrockClient()
 
     logger.info { "Press Enter to create invocations:" }

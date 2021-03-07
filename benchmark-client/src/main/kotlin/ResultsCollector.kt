@@ -5,7 +5,7 @@ import com.sun.net.httpserver.HttpServer
 import mu.KotlinLogging
 import java.net.InetSocketAddress
 
-class ResultsCollectorServer(private val hostname: String = "localhost", private val port: Int = 3358) {
+class ResultsCollector(private val hostname: String = "localhost", private val port: Int = 3358) {
     private val server = HttpServer.create(InetSocketAddress(hostname, port), 0)
 
     init {
