@@ -4,9 +4,9 @@ import mu.KotlinLogging
 import kotlin.time.ExperimentalTime
 
 @ExperimentalTime
-class Runner(accelerator: String, acceleratorAmount: Int, implInv: ImplementationAndInvocation, noMa: NodeManager) {
+class Runner(accelerator: String, implInv: ImplementationAndInvocation, noMa: NodeManager) {
     private val logger = KotlinLogging.logger {}
-    val pid = Processes.startProcess(implInv.runtime, accelerator, acceleratorAmount.toString())
+    val pid = Processes.startProcess(implInv.runtime, accelerator, implInv.amount.toString())
 
     init {
         GlobalScope.launch {
@@ -47,7 +47,7 @@ class Runner(accelerator: String, acceleratorAmount: Int, implInv: Implementatio
                         // There was no new invocation in timeout_s or other mistake
                         logger.info { "$pid: Shutting down because there is no invocation waiting for this runtime" }
                         Processes.stopProcess(pid)
-                        noMa.registerFreedResources(accelerator, acceleratorAmount)
+                        noMa.registerFreedResources(accelerator, implInv.amount)
                         break
                     }
                 }
@@ -56,8 +56,9 @@ class Runner(accelerator: String, acceleratorAmount: Int, implInv: Implementatio
     }
 
     fun invoke(inv: Invocation) {
+        val start_computation = System.currentTimeMillis()
         val response = Processes.invoke(pid, inv)
         logger.info { "Process called with $inv, returned $response" }
-        ResultsHandler.returnResult(inv, response)
+        ResultsHandler.returnResult(inv, response, start_computation, end_computation = System.currentTimeMillis())
     }
 }

@@ -2,10 +2,12 @@ data class InvocationParams(val payload: String, val callbackUrl: String) // cal
 
 data class Invocation(val runtime: String, val workload: String, val params: InvocationParams)
 
-data class ImplementationAndInvocation(val success: Boolean, val inv: Invocation, val runtime: RuntimeImplementation)
+data class ImplementationAndInvocation(val success: Boolean, val inv: Invocation, val runtime: RuntimeImplementation,
+                                       val amount: Int)
 
 data class ConsumeInvocation(val inv: Invocation, val status: Int)
 
 data class RuntimeImplementation(val acceleratorType: String, val name: String, val location: String)
 
-data class InvocationResult(val params: String, val result: String)
+data class InvocationResult(val params: String, val result: String, val start_computation: Long, val end_computation:
+Long)

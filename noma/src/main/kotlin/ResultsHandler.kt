@@ -11,12 +11,12 @@ class ResultsHandler {
     companion object {
         private val logger = KotlinLogging.logger {}
         val client = HttpClient.newHttpClient()
-        fun returnResult(inv: Invocation, result: String) {
-            val invRes = InvocationResult(inv.params.payload, result)
+        fun returnResult(inv: Invocation, result: String, start_computation: Long, end_computation: Long) {
+            val invRes = InvocationResult(inv.params.payload, result, start_computation, end_computation)
             val invResString = Klaxon().toJsonString(invRes)
             val request = HttpRequest.newBuilder().uri(
                 URI.create(
-                    "http://${inv.params.callbackUrl}/${inv.runtime}/${inv.workload}"
+                    "http://${inv.params.callbackUrl}"
                 )
             ).POST(HttpRequest.BodyPublishers.ofString(invResString)).build()
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())

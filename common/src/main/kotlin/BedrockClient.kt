@@ -84,11 +84,11 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
             // TODO maybe just consume an invocation with timeout 0?
             //List of all workloads that can be run on this runtime with this acceleratorAmount
             logger.debug { "Searching for invocations for runtime $runtimeName" }
-            // select name from workload_impl wi left join runtime_impl ri on ri.runtime_impl_id = wi.runtime_impl_id where wi.accelerator_amount > 200;
+            // select name from workload_impl wi left join runtime_impl ri on ri.runtime_impl_id = wi.runtime_impl_id where wi.accelerator_amount < 200;
             val queryWorkloads =
-                "Query\nquery: select name from workload_impl wi " +
+                "Query\nquery: select name, accelerator_amount from workload_impl wi " +
                         "left join runtime_impl ri on ri.runtime_impl_id = wi.runtime_impl_id " +
-                        "where wi.accelerator_amount >= $acceleratorAmount" +
+                        "where wi.accelerator_amount <= $acceleratorAmount" +
                         ";\nformat: json\n\n"
             val availWorkloads = turnBedrockJsonToListOfList(runCommandJson(queryWorkloads).response)
             for (job in availWorkloads) {
@@ -106,8 +106,9 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
                     return ImplementationAndInvocation(
                         true, inv.inv, getRuntimeImplementation(
                             acceleratorType,
-                            runtimeName
-                        )
+                            runtimeName,
+                        ),
+                        job[1].toInt()
                     )
                 }
             }
@@ -115,7 +116,7 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
         return ImplementationAndInvocation(
             false,
             Invocation("", "", InvocationParams("", "")),
-            RuntimeImplementation("", "", "")
+            RuntimeImplementation("", "", ""), 0
         )
     }
 
@@ -188,6 +189,11 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
         return res
     }
 
+    fun getQueuedAmount(): Int {
+        val res = runCommand("Query: select count(*) from jobs where state='QUEUED';\n\n")
+        return res.payload.split("\n")[1].toInt()
+    }
+
     fun close() {
         client.close()
     }
@@ -222,11 +228,11 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
                 "'helloWorld', 1);\n\n")
         logger.info { "Insert runtime_impl: $res" }
         res = runCommand(
-            "Query: Insert into workload_impl (name, accelerator_amount, runtime_impl_id) values ('wl-1', 500, 1);\n\n"
+            "Query: Insert into workload_impl (name, accelerator_amount, runtime_impl_id) values ('wl-1', 20, 1);\n\n"
         )
         logger.info { "Insert workload_impl: $res" }
         res = runCommand("Query: Insert into workload_impl (name, accelerator_amount, runtime_impl_id) values " +
-                "('wl-2', 500," +
+                "('wl-2', 20," +
                 " 1" +
                 ");\n\n")
         logger.info { "Insert workload_impl: $res" }

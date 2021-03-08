@@ -24,7 +24,8 @@ class NodeManager {
         job = GlobalScope.launch {
             while (isActive) {
                 acceleratorCurrentlyFree.forEach { accelerator ->
-                    logger.debug { "Trying to start new Resources for accelerator $accelerator" }
+                    logger.debug { "Trying to start new Resources for accelerator $accelerator, " +
+                            "free=${acceleratorCurrentlyFree[accelerator.key]}" }
                     if (accelerator.value > 0) {
                         startNewResources(accelerator.key, accelerator.value)
                     }
@@ -58,8 +59,8 @@ class NodeManager {
             if (nextRInv.success) {
                 logger.info { "Starting new runtime_implementation for $accelerator (amount=$amount), " +
                         "next_op=${nextRInv}" }
-                changeAcceleratorCurrentlyFree(accelerator, -amount)
-                Runner(accelerator, amount, nextRInv, this)
+                changeAcceleratorCurrentlyFree(accelerator, nextRInv.amount)
+                Runner(accelerator, nextRInv, this)
             }
         }
     }
