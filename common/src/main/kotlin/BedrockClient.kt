@@ -1,6 +1,7 @@
 import com.beust.klaxon.JsonArray
 import com.beust.klaxon.JsonObject
 import com.beust.klaxon.Klaxon
+import kotlinx.coroutines.delay
 import mu.KotlinLogging
 import java.lang.RuntimeException
 import java.net.Socket
@@ -29,10 +30,18 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
 
     data class BedrockJobResponse(val data: InvocationParams, val jobID: java.lang.Long, val name: String)
 
-    fun consumeInvocation(runtime: String = "*", workload: String = "*", timeout_s: Int = 3600): ConsumeInvocation {
+    suspend fun consumeInvocation(runtime: String = "*", workload: String = "*", timeout_s: Int = 30):
+    ConsumeInvocation {
         logger.debug { "ConsumeInvocation: $runtime, $workload, $timeout_s" }
+        val timeoutReachedMs = System.currentTimeMillis() + (timeout_s * 1000)
         val message = "GetJob\nname: $runtime.$workload\nconnection: wait\ntimeout: $timeout_s\n\n"
-        val res = runCommand(message)
+        var res: ParsedResponse
+        do {
+            res = runCommand(message)
+            // TODO Bedrock doesn't recognize timeout parameter??
+            delay(1100)
+        } while (res.status == 404 && timeoutReachedMs < System.currentTimeMillis())
+
         return if (res.status == 200) {
             val rawResponse = Klaxon().parse<BedrockJobResponse>(res.payload)!!
             val splitName = rawResponse.name.split(".")
@@ -68,7 +77,7 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
         return RuntimeImplementation(acceleratorType, runtimeName, json[0][0])
     }
 
-    fun getNextRuntimeAndInvocationToStart(acceleratorType: String, acceleratorAmount: Int):
+    suspend fun getNextRuntimeAndInvocationToStart(acceleratorType: String, acceleratorAmount: Int):
             ImplementationAndInvocation {
         // List of all runtimes that can be run on this acceleratorType
         // select name from runtime r left join runtime_impl ri on r.runtime_id = ri.runtime_id where ri.accelerator_type = 'gpu';

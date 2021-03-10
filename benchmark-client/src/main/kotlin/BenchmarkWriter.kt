@@ -1,3 +1,5 @@
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import java.io.File
 import java.text.DateFormat
@@ -18,7 +20,13 @@ class BenchmarkWriter(private val runName: String, private val folder: String = 
     private val allInvocations = mutableListOf<BenchmarkedInvocation>()
 
     fun collectStart(inv: Invocation, start: Long = System.currentTimeMillis()) {
-        allInvocations.add(BenchmarkedInvocation(inv, start))
+        val bi = BenchmarkedInvocation(inv, start)
+        // Just a couple of coroutines waiting to add their item to the list.
+        GlobalScope.launch {
+            synchronized(allInvocations) {
+                allInvocations.add(bi)
+            }
+        }
     }
 
     fun collectEnd(callback: String, result: InvocationResult, end: Long = System.currentTimeMillis()) {
@@ -37,7 +45,12 @@ class BenchmarkWriter(private val runName: String, private val folder: String = 
 
     private val queuedCount = mutableListOf<Pair<Long, Int>>()
     fun collectQueueState(amount: Int) {
-        queuedCount.add(Pair(System.currentTimeMillis(), amount))
+        GlobalScope.launch {
+            synchronized(queuedCount) {
+                queuedCount.add(Pair(System.currentTimeMillis(), amount))
+            }
+        }
+
     }
 
     /**
@@ -74,7 +87,7 @@ class BenchmarkWriter(private val runName: String, private val folder: String = 
         val targetQueueFile = File(pathQueueName)
         targetQueueFile.parentFile.mkdirs()
         val writerQueue = targetQueueFile.bufferedWriter()
-        writerQueue.write("time;queued\n")
+        writerQueue.write("time;queuedNum\n")
         queuedCount.forEach {
             writerQueue.write("\"${it.first}\";\"${it.second}\"\n")
         }

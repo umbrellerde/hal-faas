@@ -26,6 +26,8 @@ class BenchmarkRunner(
         val thisRoundStart = System.currentTimeMillis()
         repeat(trps) {
             GlobalScope.launch {
+                // TODO maybe this is not fast enough wen aiming for higher TPS? This creates $tps Instances of
+                // BedrockClient every second
                 val bc = BedrockClient()
                 createInvocation(bc)
                 bc.close()
