@@ -17,7 +17,7 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
     fun createInvocation(inv: Invocation): Boolean {
         logger.debug { "CreateInvocation: $inv" }
         val params = Klaxon().toJsonString(inv.params)
-        val message = "CreateJob\nname: ${inv.runtime}.${inv.workload}\ndata: $params\n\n"
+        val message = "CreateJob\nname: ${inv.runtime}.${inv.configuration}\ndata: $params\n\n"
         client.getOutputStream().write(message.toByteArray())
         val res = parseResponse()
         return if (res.status == 200) {

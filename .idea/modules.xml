@@ -7,6 +7,7 @@
       <module fileurl="file://$PROJECT_DIR$/hal-faas.iml" filepath="$PROJECT_DIR$/hal-faas.iml" />
       <module fileurl="file://$PROJECT_DIR$/runtimes/helloWorld/helloWorld.iml" filepath="$PROJECT_DIR$/runtimes/helloWorld/helloWorld.iml" />
       <module fileurl="file://$PROJECT_DIR$/noma/noma.iml" filepath="$PROJECT_DIR$/noma/noma.iml" />
+      <module fileurl="file://$PROJECT_DIR$/runtimes/onnx/onnx.iml" filepath="$PROJECT_DIR$/runtimes/onnx/onnx.iml" />
     </modules>
   </component>
 </project>

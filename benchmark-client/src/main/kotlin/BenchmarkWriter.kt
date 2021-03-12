@@ -76,7 +76,7 @@ class BenchmarkWriter(private val runName: String, private val folder: String = 
                 it.result = InvocationResult("", "", -1, -1)
             }
             writer.write(
-                "\"${it.inv.runtime}\";\"${it.inv.workload}\";\"${it.inv.params.payload}\";" +
+                "\"${it.inv.runtime}\";\"${it.inv.configuration}\";\"${it.inv.params.payload}\";" +
                         "\"${it.inv.params.callbackUrl}\";\"${it.start}\";\"${it.end}\";\"${it.result!!.start_computation}\";" +
                         "\"${it.result!!.end_computation}\";\"${it.result!!.result}\"\n"
             )

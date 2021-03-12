@@ -8,25 +8,26 @@ import kotlin.time.seconds
 class NodeManager {
     private val bc = BedrockClient()
     private val logger = KotlinLogging.logger {}
-    // TODO read this from a config file with acceleratorName, Type, Amount...
+
+    // TODO maybe read this from a config file with acceleratorName, Type, Amount...
     private val acceleratorTypes = mapOf(
-            "gpu-1" to "gpu",
-            "gpu-2" to "gpu"
+        "gpu-1" to "gpu",
+        "gpu-2" to "gpu"
     )
     private val acceleratorCurrentlyFree = mutableMapOf(
         "gpu-1" to 500,
         "gpu-2" to 500
     )
     private var job: Job
+
     init {
 //        acceleratorTypes.forEach { accelerator -> registerFreedResources(accelerator.value,
 //            acceleratorCurrentlyFree[accelerator.key]!!) }
         job = GlobalScope.launch {
             while (isActive) {
                 acceleratorCurrentlyFree.forEach { accelerator ->
-                    logger.debug { "Trying to start new Resources for accelerator $accelerator, " +
-                            "free=${acceleratorCurrentlyFree[accelerator.key]}" }
                     if (accelerator.value > 0) {
+                        logger.debug { "Trying to start new Resources for accelerator $accelerator, free=${acceleratorCurrentlyFree[accelerator.key]}" }
                         startNewResources(accelerator.key, accelerator.value)
                     }
                 }
@@ -57,8 +58,10 @@ class NodeManager {
         val nextRInv = bc.getNextRuntimeAndInvocationToStart(acceleratorType!!, amount)
         synchronized(acceleratorCurrentlyFree) {
             if (nextRInv.success) {
-                logger.info { "Starting new runtime_implementation for $accelerator (amount=$amount), " +
-                        "next_op=${nextRInv}" }
+                logger.info {
+                    "Starting new runtime_implementation for $accelerator (amount=$amount), " +
+                            "next_op=${nextRInv}"
+                }
                 changeAcceleratorCurrentlyFree(accelerator, nextRInv.amount)
                 Runner(accelerator, nextRInv, this)
             }
