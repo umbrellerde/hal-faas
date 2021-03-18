@@ -55,32 +55,27 @@ class Runner(accelerator: String, implInv: ImplementationAndInvocation, noMa: No
             }
         }
     }
-    data class RuntimeInstanceResponse(
-        val request: String,
-        val accelerator: String,
-        val amount: Int,
-        val pid: String,
-        val result_type: String,
-        var result: String,
-        val metadata: String
-        )
+
     fun invoke(inv: Invocation) {
         val startComputation = System.currentTimeMillis()
         val invToUse = if (inv.params.payload_type == PayloadTypes.REFERENCE) {
-            val path = S3Helper.getPathFomData(pid, inv.params.payload)
+            val path = "" //S3Helper.getPathFomData(pid, inv.params.payload)
             inv.copy(params = inv.params.copy(payload = path))
         } else {
             inv
         }
-        val configurationPath = S3Helper.getPathFromConfigurationInput(invToUse.configuration)
+        val configurationPath = "" //S3Helper.getPathFromConfigurationInput(invToUse.configuration)
         val response = Processes.invoke(pid, invToUse.copy(configuration = configurationPath))
-        val responseParsed = Klaxon().parse<RuntimeInstanceResponse>(response)
+        // TODO add startComputation, endComputation
+        val responseParsed = Klaxon().parse<InvocationResult>(response)
+        responseParsed?.start_computation = startComputation
+        responseParsed?.end_computation = System.currentTimeMillis()
         logger.info { "Process called with $invToUse, returned $responseParsed" }
-        if (responseParsed!!.result_type == "reference") {
+        if (responseParsed?.result_type == "reference") {
             logger.info { "Uploading file ${responseParsed.result} to s3://" }
-            val path = S3Helper.uploadResult(responseParsed.result)
+            val path = S3Helper.uploadResults(responseParsed.result)
             responseParsed.result = path
         }
-        ResultsHandler.returnResult(inv, response, startComputation, end_computation = System.currentTimeMillis())
+        ResultsHandler.returnResult(inv, responseParsed ?: InvocationResult.empty())
     }
 }

@@ -11,9 +11,8 @@ class ResultsHandler {
     companion object {
         private val logger = KotlinLogging.logger {}
         val client = HttpClient.newHttpClient()
-        fun returnResult(inv: Invocation, result: String, start_computation: Long, end_computation: Long) {
-            val invRes = InvocationResult(inv.params.payload, result, start_computation, end_computation)
-            val invResString = Klaxon().toJsonString(invRes)
+        fun returnResult(inv: Invocation, result: InvocationResult) {
+            val invResString = Klaxon().toJsonString(result)
             val request = HttpRequest.newBuilder().uri(
                 URI.create(
                     "http://${inv.params.callbackUrl}"

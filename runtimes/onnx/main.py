@@ -70,7 +70,7 @@ if __name__ == '__main__':
                 'amount': amount,
                 'pid': os.getppid(),
                 'result_type': 'reference',  # 'reference' or 'value'
-                'result': os.path.abspath(output_path),
+                'result': [os.path.abspath(output_path)],
                 'metadata': metadata
             }
             print(json.dumps(result), flush=True)

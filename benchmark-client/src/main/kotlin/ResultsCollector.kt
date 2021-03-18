@@ -30,7 +30,7 @@ class ResultsCollector(private val hostname: String = "localhost", private val p
             logger.debug { "Response $invRes on address ${t.requestURI.path}" }
             if (invRes == null) {
                 logger.warn { "Response to ${t.requestURI.path} ($body) could not be parsed as JSON..." }
-                invRes = InvocationResult("", "", -1, -1)
+                invRes = InvocationResult.empty()
             }
             bw.collectEnd(t.requestURI.path, invRes)
             t.close()

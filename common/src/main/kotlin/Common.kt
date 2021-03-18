@@ -2,10 +2,14 @@ enum class PayloadTypes() {
     REFERENCE, VALUE
 }
 
+data class S3File(val endpoint: String, val accessKey: String, val secretKey: String, val bucketName: String, val
+fileName: String)
+
 data class InvocationParams(
     val payload_type: PayloadTypes = PayloadTypes.REFERENCE,
     val payload: String,
     // callbackUrl to POST the Results to
+    val resultFile: S3File,
     val callbackUrl: String
 )
 
@@ -21,6 +25,19 @@ data class ConsumeInvocation(val inv: Invocation, val status: Int)
 data class RuntimeImplementation(val acceleratorType: String, val name: String, val location: String)
 
 data class InvocationResult(
-    val params: String, val result: String, val start_computation: Long, val end_computation:
-    Long
-)
+    val request: String,
+    val accelerator: String,
+    val amount: Int,
+    val pid: String,
+    val result_type: String,
+    var result: List<String>,
+    val metadata: String,
+    var start_computation: Long,
+    var end_computation: Long
+) {
+    companion object {
+        fun empty(): InvocationResult {
+            return InvocationResult("", "", -1, "", "", listOf(""), "", -1, -1)
+        }
+    }
+}

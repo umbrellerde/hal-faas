@@ -12,7 +12,7 @@ class S3Helper {
          * if not downloads it
          * returns the absolute path to the file
          */
-        fun getPathFromConfigurationInput(s3Path: String): String{
+        fun getPathFromConfigurationInput(runtime: String, s3Path: String): String{
             val filename = ""
             // TODO
             val destFile = File(folder, filename)
@@ -20,9 +20,10 @@ class S3Helper {
         }
 
         /**
-         * if the payload_type of the param is REFERENCE, this will download the file and return a link to it.
+         * if the payload_type of the param is REFERENCE, this will download the file and return the place where it
+         * is saved.
          */
-        fun getPathFomData(pid: String, data: String): String {
+        fun getPathFomDataInput(runtime: String, s3Path: String): String {
             throw RuntimeException("Implement me!")
             return ""
         }
@@ -30,9 +31,9 @@ class S3Helper {
         /**
          * returns the s3 path to the result
          */
-        fun uploadResult(filepath: String): String {
+        fun uploadResults(filepath: List<String>): List<String> {
             throw RuntimeException("Implement me!")
-            return ""
+            return listOf("")
         }
     }
 }
