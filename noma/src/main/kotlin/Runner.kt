@@ -37,8 +37,6 @@ class Runner(accelerator: String, implInv: ImplementationAndInvocation, noMa: No
 
                 if (!successfulRun) {
                     // try to find a new workload that has this runtime.
-                    // TODO only consume workloads where this runtime has enough memory??? Or rename workloads
-                    // according to their storage
                     val nextInv = client.consumeInvocation(implInv.runtime.name, "*", 30)
                     if (nextInv.status == 200) {
                         logger.debug { "$pid: Calling $nextInv" }
@@ -58,24 +56,35 @@ class Runner(accelerator: String, implInv: ImplementationAndInvocation, noMa: No
 
     fun invoke(inv: Invocation) {
         val startComputation = System.currentTimeMillis()
-        val invToUse = if (inv.params.payload_type == PayloadTypes.REFERENCE) {
-            val path = "" //S3Helper.getPathFomData(pid, inv.params.payload)
-            inv.copy(params = inv.params.copy(payload = path))
-        } else {
-            inv
+
+        // maybe download the inputconfiguration, but update "configuration" parameter to the file path either way
+        val split = inv.configuration.split("|")
+        val invConfFile = S3Helper.getInputConfiguration(split[0], split[1])
+        inv.configuration = invConfFile.absolutePath
+
+        // maybe download the inputdata, then update the path
+        if (inv.params.payload_type == PayloadTypes.REFERENCE) {
+            // we need to download it! --> its in the format of a S3File
+            val s3object = Klaxon().parse<S3File>(inv.params.payload)!!
+            val file = S3Helper.getInputData(s3object)
+            inv.params.payload = file.absolutePath
         }
-        val configurationPath = "" //S3Helper.getPathFromConfigurationInput(invToUse.configuration)
-        val response = Processes.invoke(pid, invToUse.copy(configuration = configurationPath))
-        // TODO add startComputation, endComputation
-        val responseParsed = Klaxon().parse<InvocationResult>(response)
-        responseParsed?.start_computation = startComputation
-        responseParsed?.end_computation = System.currentTimeMillis()
-        logger.info { "Process called with $invToUse, returned $responseParsed" }
-        if (responseParsed?.result_type == "reference") {
+
+        // actual invocation
+        val response = Processes.invoke(pid, inv)
+
+        // parse response, maybe upload result
+        val responseParsed = Klaxon().parse<InvocationResult>(response)!!
+        responseParsed.start_computation = startComputation
+        responseParsed.end_computation = System.currentTimeMillis()
+        logger.info { "Process called with $inv, returned $responseParsed" }
+
+        if (responseParsed.result_type == "reference") {
             logger.info { "Uploading file ${responseParsed.result} to s3://" }
-            val path = S3Helper.uploadResults(responseParsed.result)
-            responseParsed.result = path
+            val files = S3Helper.uploadFiles(responseParsed.result, inv.params.resultBucket)
+            responseParsed.result = files
         }
-        ResultsHandler.returnResult(inv, responseParsed ?: InvocationResult.empty())
+
+        ResultsHandler.returnResult(inv, responseParsed)
     }
 }

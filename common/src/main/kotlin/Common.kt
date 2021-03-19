@@ -2,18 +2,28 @@ enum class PayloadTypes() {
     REFERENCE, VALUE
 }
 
-data class S3File(val endpoint: String, val accessKey: String, val secretKey: String, val bucketName: String, val
-fileName: String)
+data class S3Bucket(val endpoint: String, val accessKey: String, val secretKey: String, val bucketName: String) {
+    companion object {
+        fun empty(): S3Bucket {
+            return S3Bucket("", "", "", "")
+        }
+    }
+}
+
+/**
+ * Used for inputdata that is a reference. In this case the inv.params String is of this type.
+ */
+data class S3File(val bucket: S3Bucket, val file: String)
 
 data class InvocationParams(
     val payload_type: PayloadTypes = PayloadTypes.REFERENCE,
-    val payload: String,
+    var payload: String,
     // callbackUrl to POST the Results to
-    val resultFile: S3File,
+    val resultBucket: S3Bucket,
     val callbackUrl: String
 )
 
-data class Invocation(val runtime: String, val configuration: String, val params: InvocationParams)
+data class Invocation(val runtime: String, var configuration: String, val params: InvocationParams)
 
 data class ImplementationAndInvocation(
     val success: Boolean, val inv: Invocation, val runtime: RuntimeImplementation,

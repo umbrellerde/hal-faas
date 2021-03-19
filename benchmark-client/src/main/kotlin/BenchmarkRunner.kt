@@ -10,14 +10,15 @@ class BenchmarkRunner(
     val bw: BenchmarkWriter,
     val bench: BenchmarkDefinition,
     val runtime: String = "helloWorld",
-    val workload: String = "wl-1",
+    val workload: String = "bucket|yolov4.onnx",
     val payload: String = "payload",
     val callbackBase: String = "localhost:3358",
 ) {
     private val logger = KotlinLogging.logger {}
     private fun createInvocation(bc: BedrockClient) {
         val inv =
-            Invocation(runtime, workload, InvocationParams(payload, callbackBase + "/" + RandomIDGenerator.next()))
+            Invocation(runtime, workload, InvocationParams(PayloadTypes.REFERENCE, payload, S3Bucket.empty(),
+                callbackBase + "/" + RandomIDGenerator.next()))
         bw.collectStart(inv)
         bc.createInvocation(inv)
     }
@@ -27,7 +28,7 @@ class BenchmarkRunner(
         repeat(trps) {
             GlobalScope.launch {
                 // TODO maybe this is not fast enough wen aiming for higher TPS? This creates $tps Instances of
-                // BedrockClient every second
+                // TODO BedrockClient every second
                 val bc = BedrockClient()
                 createInvocation(bc)
                 bc.close()
