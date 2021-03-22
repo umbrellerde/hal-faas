@@ -1,4 +1,4 @@
-enum class PayloadTypes() {
+enum class PayloadTypes {
     REFERENCE, VALUE
 }
 

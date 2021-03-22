@@ -73,12 +73,13 @@ class BenchmarkWriter(private val runName: String, private val folder: String = 
         allInvocations.forEach {
             if (it.result == null) {
                 logger.error { "Computation $it has no Result!" }
-                it.result = InvocationResult("", "", -1, -1)
+                it.result = InvocationResult.empty()
             }
+            val escapedJson = it.result!!.result.joinToString("," , "[", "]")
             writer.write(
                 "\"${it.inv.runtime}\";\"${it.inv.configuration}\";\"${it.inv.params.payload}\";" +
                         "\"${it.inv.params.callbackUrl}\";\"${it.start}\";\"${it.end}\";\"${it.result!!.start_computation}\";" +
-                        "\"${it.result!!.end_computation}\";\"${it.result!!.result}\"\n"
+                        "\"${it.result!!.end_computation}\";\"${escapedJson}\"\n"
             )
         }
         writer.close()
