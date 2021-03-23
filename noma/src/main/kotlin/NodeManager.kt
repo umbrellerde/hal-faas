@@ -41,10 +41,11 @@ class NodeManager {
     }
 
     suspend fun registerFreedResources(accelerator: String, amount: Int) {
-        synchronized(acceleratorCurrentlyFree) {
+        val totalFree = synchronized(acceleratorCurrentlyFree) {
             changeAcceleratorCurrentlyFree(accelerator, amount)
+            acceleratorCurrentlyFree[accelerator]!!
         }
-        startNewResources(accelerator, amount)
+        startNewResources(accelerator, totalFree)
     }
 
     private fun changeAcceleratorCurrentlyFree(key: String, value: Int) {
@@ -56,7 +57,7 @@ class NodeManager {
         logger.debug { "Trying to start new runtime_implementation on $accelerator, amount=$amount" }
         val acceleratorType = acceleratorTypes[accelerator]
         val nextRInv = bc.getNextRuntimeAndInvocationToStart(acceleratorType!!, amount)
-        synchronized(acceleratorCurrentlyFree) {
+        val changedAmount = synchronized(acceleratorCurrentlyFree) {
             if (nextRInv.success) {
                 logger.info {
                     "Starting new runtime_implementation for $accelerator (amount=$amount), " +
@@ -64,7 +65,15 @@ class NodeManager {
                 }
                 changeAcceleratorCurrentlyFree(accelerator, nextRInv.amount)
                 Runner(accelerator, nextRInv, this)
+                nextRInv.amount
+            } else {
+                -1
             }
+        }
+        // We started something but we didn't use every freed resource
+        val restFreeAmount = amount - changedAmount
+        if (changedAmount != -1 && restFreeAmount > 0) {
+            startNewResources(accelerator, restFreeAmount)
         }
     }
 
