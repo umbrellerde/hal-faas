@@ -3,21 +3,30 @@ import com.beust.klaxon.JsonObject
 import com.beust.klaxon.Klaxon
 import kotlinx.coroutines.delay
 import mu.KotlinLogging
-import java.lang.RuntimeException
 import java.net.Socket
+import java.util.*
+import kotlin.collections.ArrayList
 
 /**
  * Implementation according to https://bedrockdb.com/jobs.html
  */
-class BedrockClient(url: String = "localhost", port: Int = 8888) {
+class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bedrockPort) : IDatabseClient {
     private val logger = KotlinLogging.logger {}
     private val client = Socket(url, port)
     private val reader = client.getInputStream().bufferedReader()
+    private fun encodeConfig(config: String) =
+        Base64.getEncoder().encode(config.toByteArray()).toString()
 
-    fun createInvocation(inv: Invocation): Boolean {
+    private fun decodeConfig(encoded: String) =
+        Base64.getDecoder().decode(encoded).toString()
+
+    override fun createInvocation(inv: Invocation): Boolean {
         logger.debug { "CreateInvocation: $inv" }
         val params = Klaxon().toJsonString(inv.params)
-        val message = "CreateJob\nname: ${inv.runtime}.${inv.configuration}\ndata: $params\n\n"
+        if (params.contains("\n")) {
+            logger.error { "Params contain newlines! inv=$inv, json=$params" }
+        }
+        val message = "CreateJob\nname: ${inv.runtime}.${encodeConfig(inv.configuration)}\ndata: $params\n\n"
         client.getOutputStream().write(message.toByteArray())
         val res = parseResponse()
         return if (res.status == 200) {
@@ -28,13 +37,13 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
         }
     }
 
-    data class BedrockJobResponse(val data: InvocationParams, val jobID: java.lang.Long, val name: String)
+    data class BedrockJobResponse(val data: InvocationParams, val jobID: Long, val name: String)
 
-    suspend fun consumeInvocation(runtime: String = "*", workload: String = "*", timeout_s: Int = 30):
-    ConsumeInvocation {
-        logger.debug { "ConsumeInvocation: $runtime, $workload, $timeout_s" }
+    override suspend fun consumeInvocation(runtime: String, config: String, timeout_s: Int):
+            ConsumeInvocation {
+        logger.debug { "ConsumeInvocation: $runtime, $config, $timeout_s" }
         val timeoutReachedMs = System.currentTimeMillis() + (timeout_s * 1000)
-        val message = "GetJob\nname: $runtime.$workload\nconnection: wait\ntimeout: $timeout_s\n\n"
+        val message = "GetJob\nname: $runtime.${encodeConfig(config)}\nconnection: wait\ntimeout: $timeout_s\n\n"
         var res: ParsedResponse
         do {
             res = runCommand(message)
@@ -47,7 +56,7 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
             val splitName = rawResponse.name.split(".")
             ConsumeInvocation(Invocation(splitName[0], splitName[1], rawResponse.data), 200)
         } else {
-            ConsumeInvocation(Invocation(runtime, workload, InvocationParams("", "")), res.status)
+            ConsumeInvocation(Invocation(runtime, config, InvocationParams.empty()), res.status)
         }
     }
 
@@ -63,7 +72,7 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
     /**
      * Get the  location of the runImpl for this acceleratorType from the database
      */
-    fun getRuntimeImplementation(acceleratorType: String, runtimeName: String): RuntimeImplementation {
+    override fun getRuntimeImplementation(acceleratorType: String, runtimeName: String): RuntimeImplementation {
         // Query: select location from runtime_impl where runtime_id = (select runtime_id from runtime where name='helloWorld') and accelerator_type = 'gpu';
         val queryRuntime =
             "Query\nquery: select location from runtime_impl " +
@@ -77,7 +86,7 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
         return RuntimeImplementation(acceleratorType, runtimeName, json[0][0])
     }
 
-    suspend fun getNextRuntimeAndInvocationToStart(acceleratorType: String, acceleratorAmount: Int):
+    override suspend fun getNextRuntimeAndInvocationToStart(acceleratorType: String, acceleratorAmount: Int):
             ImplementationAndInvocation {
         // List of all runtimes that can be run on this acceleratorType
         // select name from runtime r left join runtime_impl ri on r.runtime_id = ri.runtime_id where ri.accelerator_type = 'gpu';
@@ -124,7 +133,7 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
         }
         return ImplementationAndInvocation(
             false,
-            Invocation("", "", InvocationParams("", "")),
+            Invocation("", "", InvocationParams.empty()),
             RuntimeImplementation("", "", ""), 0
         )
     }
@@ -132,8 +141,10 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
 
     private data class ParsedResponse(val status: Int, val payload: String, val debugInformation: String) {
         override fun toString(): String {
-            return "CustomParsedResponse(status=$status, payload=$payload, debugInformation=${debugInformation
-                .replace("\n", " ")})"
+            return "ParsedResponse(status=$status, payload=$payload, debugInformation=${
+                debugInformation
+                    .replace("\n", " ")
+            })"
         }
     }
 
@@ -160,7 +171,8 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
                     return ParsedResponse(status, contentLineBuilder.toString(), debugInformation.toString())
                 }
                 line.isEmpty() -> {
-                    // This is weird
+                    // There should be no empty lines before the "Content-Length"-Line...
+                    logger.error { "parseResponse: got empty line. status=$status, debug=${debugInformation}" }
                     return ParsedResponse(status, "", debugInformation.toString())
                 }
                 else -> debugInformation.append(line + "\n")
@@ -178,10 +190,12 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
     private fun runCommandJson(query: String): JsonResponse {
         val res = runCommand(query)
         logger.debug { "Trying to parse $res as Json (query=${query.replace("\n", " ")})" }
-        return JsonResponse(res.status, Klaxon().parser().parse(java.lang.StringBuilder(res.payload)) as
-                JsonObject,
+        return JsonResponse(
+            res.status, Klaxon().parser().parse(java.lang.StringBuilder(res.payload)) as
+                    JsonObject,
             res
-            .debugInformation)
+                .debugInformation
+        )
     }
 
     private fun turnBedrockJsonToListOfList(obj: JsonObject): List<List<String>> {
@@ -198,20 +212,24 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
         return res
     }
 
-    fun getQueuedAmount(): Int {
+    override fun getQueuedAmount(): Int {
         val res = runCommand("Query: select count(*) from jobs where state='QUEUED';\n\n")
         return res.payload.split("\n")[1].toInt()
     }
 
-    fun close() {
+    override fun close() {
         client.close()
     }
 
-    fun initializeDatasbase() {
+    override fun initializeDatasbase() {
         // Check if the first table already exists, if yes skip this
-        var resJson = turnBedrockJsonToListOfList(runCommandJson("Query\n" +
-                "query: select count(*) from sqlite_master where type='table' and name='runtime';\n" +
-                "format: json\n\n").response)
+        var resJson = turnBedrockJsonToListOfList(
+            runCommandJson(
+                "Query\n" +
+                        "query: select count(*) from sqlite_master where type='table' and name='runtime';\n" +
+                        "format: json\n\n"
+            ).response
+        )
         if (resJson[0][0].toInt() == 1) {
             logger.info { "Database is already initialized..." }
             return
@@ -233,17 +251,21 @@ class BedrockClient(url: String = "localhost", port: Int = 8888) {
         logger.info { "Create workload_impl: $res" }
         res = runCommand("Query: Insert into runtime (name) values ('helloWorld');\n\n")
         logger.info { "Insert runtime: $res" }
-        res = runCommand("Query: Insert into runtime_impl (accelerator_type, location, runtime_id) values ('gpu', " +
-                "'helloWorld', 1);\n\n")
+        res = runCommand(
+            "Query: Insert into runtime_impl (accelerator_type, location, runtime_id) values ('gpu', " +
+                    "'helloWorld', 1);\n\n"
+        )
         logger.info { "Insert runtime_impl: $res" }
         res = runCommand(
             "Query: Insert into workload_impl (name, accelerator_amount, runtime_impl_id) values ('wl-1', 20, 1);\n\n"
         )
         logger.info { "Insert workload_impl: $res" }
-        res = runCommand("Query: Insert into workload_impl (name, accelerator_amount, runtime_impl_id) values " +
-                "('wl-2', 20," +
-                " 1" +
-                ");\n\n")
+        res = runCommand(
+            "Query: Insert into workload_impl (name, accelerator_amount, runtime_impl_id) values " +
+                    "('wl-2', 20," +
+                    " 1" +
+                    ");\n\n"
+        )
         logger.info { "Insert workload_impl: $res" }
         // Query: insert into runtime (name) values ('test'); hat lastInsertRowID: 1
         // Query: insert into runtime_impl (accelerator_type, location, runtime_id) values ('acc', 'loc', 1);

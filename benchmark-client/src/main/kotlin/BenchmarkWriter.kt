@@ -57,7 +57,7 @@ class BenchmarkWriter(private val runName: String, private val folder: String = 
      * writes results to $folder/$date_$name.csv
      * returns file name
      */
-    fun writeToFile() : String {
+    fun writeToFile(): String {
         val tz = TimeZone.getTimeZone("Europe/Berlin")
         val df: DateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
         df.timeZone = tz
@@ -68,14 +68,16 @@ class BenchmarkWriter(private val runName: String, private val folder: String = 
         val targetFile = File(pathName)
         targetFile.parentFile.mkdirs()
         val writer = targetFile.bufferedWriter()
-        writer.write("runtime;staticParam;volatileParam;callbackUrl;start;end;start_computation;end_computation;" +
-                "result\n")
+        writer.write(
+            "runtime;staticParam;volatileParam;callbackUrl;start;end;start_computation;end_computation;" +
+                    "result\n"
+        )
         allInvocations.forEach {
             if (it.result == null) {
                 logger.error { "Computation $it has no Result!" }
                 it.result = InvocationResult.empty()
             }
-            val escapedJson = it.result!!.result.joinToString("," , "[", "]")
+            val escapedJson = it.result!!.result.joinToString(",", "[", "]")
             writer.write(
                 "\"${it.inv.runtime}\";\"${it.inv.configuration}\";\"${it.inv.params.payload}\";" +
                         "\"${it.inv.params.callbackUrl}\";\"${it.start}\";\"${it.end}\";\"${it.result!!.start_computation}\";" +

@@ -6,14 +6,14 @@ class QueueReporter(bc: BedrockClient, bw: BenchmarkWriter, delay: Long) {
         var i = 1
         while (isActive) {
             bw.collectQueueState(bc.getQueuedAmount())
-            val nextQueryTime = start + i*delay
+            val nextQueryTime = start + i * delay
             val delay = nextQueryTime - System.currentTimeMillis()
             i++
             delay(delay)
         }
     }
 
-    fun close(){
+    fun close() {
         job.cancel()
     }
 }

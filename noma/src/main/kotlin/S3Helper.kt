@@ -3,12 +3,6 @@ import io.minio.MinioClient
 import io.minio.UploadObjectArgs
 import mu.KotlinLogging
 import java.io.File
-import kotlin.io.path.ExperimentalPathApi
-import kotlin.io.path.Path
-
-val accessKey = "abc"
-val secretKey = "def"
-val endpoint = "localhost:9000"
 
 class S3Helper {
     companion object {
@@ -17,7 +11,10 @@ class S3Helper {
         private val configFolder = File(folder, "configs/").apply { mkdirs() }
         private val dataFolder = File(folder, "data/").apply { mkdirs() }
 
-        private val s3Client = MinioClient.builder().endpoint(endpoint).credentials(accessKey, secretKey).build()
+        private val s3Client = MinioClient.builder().endpoint(Settings.s3Endpoint).credentials(
+            Settings.s3AccessKey,
+            Settings.s3SecretKey
+        ).build()
         private val logger = KotlinLogging.logger {}
 
         fun download(bucket: String, objectName: String, subfolder: File, s3Client: MinioClient = this.s3Client): File {
@@ -48,7 +45,7 @@ class S3Helper {
             }
         }
 
-        fun getInputData(s3obj: S3File): File  {
+        fun getInputData(s3obj: S3File): File {
             val bucketFolder = File(dataFolder, "${s3obj.bucket}/")
             val destFile = File(bucketFolder, s3obj.file)
 
@@ -56,8 +53,10 @@ class S3Helper {
                 logger.debug { "Data File $s3obj already exists" }
                 destFile
             } else {
-                val clientsClient = MinioClient.builder().endpoint(s3obj.bucket.endpoint).credentials(s3obj.bucket.accessKey,
-                    s3obj.bucket.secretKey).build()
+                val clientsClient = MinioClient.builder().endpoint(s3obj.bucket.endpoint).credentials(
+                    s3obj.bucket.accessKey,
+                    s3obj.bucket.secretKey
+                ).build()
                 download(s3obj.bucket.bucketName, s3obj.file, bucketFolder, clientsClient)
             }
         }
@@ -66,8 +65,10 @@ class S3Helper {
          * upload the list of files to the bucket
          */
         fun uploadFiles(filepath: List<String>, bucket: S3Bucket): List<String> {
-            val clientsClient = MinioClient.builder().endpoint(bucket.endpoint).credentials(bucket.accessKey,
-                bucket.secretKey).build()
+            val clientsClient = MinioClient.builder().endpoint(bucket.endpoint).credentials(
+                bucket.accessKey,
+                bucket.secretKey
+            ).build()
             for (file in filepath) {
                 clientsClient.uploadObject(
                     UploadObjectArgs.builder()
@@ -77,7 +78,7 @@ class S3Helper {
                         .build()
                 )
             }
-            return filepath.map {it.split("/").last()}
+            return filepath.map { it.split("/").last() }
         }
     }
 }

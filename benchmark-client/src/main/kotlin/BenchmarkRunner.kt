@@ -1,10 +1,14 @@
-import kotlinx.coroutines.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import mu.KotlinLogging
-import kotlin.coroutines.coroutineContext
 
-data class BenchmarkDefinition(val p0Duration: Long = 60_000, val p0Trps: Int = 0,
-                               val p1Duration: Long = 60_000,
-                               val p2Duration: Long = 180_000, val p2Trps: Int = 15)
+data class BenchmarkDefinition(
+    val p0Duration: Long = 60_000, val p0Trps: Int = 0,
+    val p1Duration: Long = 60_000,
+    val p2Duration: Long = 180_000, val p2Trps: Int = 15
+)
+
 class BenchmarkRunner(
     val bc: BedrockClient,
     val bw: BenchmarkWriter,
@@ -17,8 +21,12 @@ class BenchmarkRunner(
     private val logger = KotlinLogging.logger {}
     private fun createInvocation(bc: BedrockClient) {
         val inv =
-            Invocation(runtime, workload, InvocationParams(PayloadTypes.REFERENCE, payload, S3Bucket.empty(),
-                callbackBase + "/" + RandomIDGenerator.next()))
+            Invocation(
+                runtime, workload, InvocationParams(
+                    PayloadTypes.REFERENCE, payload, S3Bucket.empty(),
+                    callbackBase + "/" + RandomIDGenerator.next()
+                )
+            )
         bw.collectStart(inv)
         bc.createInvocation(inv)
     }
@@ -38,9 +46,11 @@ class BenchmarkRunner(
         val thisRoundTime = thisRoundEnd - thisRoundStart
         val timeToSleep = 1000 - thisRoundTime
         if (timeToSleep < 0) {
-            logger.error { "Warning: $step Could not keep up with starting Coroutines for test! " +
-                    "trps=$trps, start=$thisRoundStart, " +
-                    "end=$thisRoundEnd, time=$thisRoundTime" }
+            logger.error {
+                "Warning: $step Could not keep up with starting Coroutines for test! " +
+                        "trps=$trps, start=$thisRoundStart, " +
+                        "end=$thisRoundEnd, time=$thisRoundTime"
+            }
             return 0
         }
         return timeToSleep

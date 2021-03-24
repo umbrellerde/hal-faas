@@ -45,6 +45,12 @@
             <name>Bintray Kotlin EAP Repository</name>
             <url>https://dl.bintray.com/kotlin/kotlin-eap</url>
         </repository>
+        <!-- For CLI Parsing -->
+        <repository>
+            <id>kotlinx</id>
+            <name>kotlinx</name>
+            <url>https://kotlin.bintray.com/kotlinx/</url>
+        </repository>
     </repositories>
 
     <pluginRepositories>
@@ -225,6 +231,12 @@
             <groupId>io.minio</groupId>
             <artifactId>minio</artifactId>
             <version>8.1.0</version>
+        </dependency>
+        <!-- Command Line Parameters -->
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-cli-jvm</artifactId>
+            <version>0.3.1</version>
         </dependency>
     </dependencies>
 

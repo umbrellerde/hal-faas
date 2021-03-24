@@ -1,14 +1,13 @@
 import com.beust.klaxon.Klaxon
 import mu.KotlinLogging
-import java.io.*
-import java.lang.Exception
-import java.lang.IllegalArgumentException
+import java.io.File
 
 class Processes {
     companion object {
         private val logger = KotlinLogging.logger {}
 
         private val processes = ArrayList<Process>()
+
         init {
             Runtime.getRuntime().addShutdownHook(
                 Thread {
@@ -20,7 +19,6 @@ class Processes {
             )
         }
 
-        // TODO maybe the acceleratorAmount can be stored in the runtime? Although it might depend on the accelerator chosen (older model gets more resources etc??)
         fun startProcess(runtime: RuntimeImplementation, accelerator: String, acceleratorAmount: String): String {
             logger.info { "Create was called with $runtime on $accelerator (Qty: $acceleratorAmount)" }
             var process: Process? = null
@@ -32,7 +30,7 @@ class Processes {
             } catch (e: Exception) {
                 logger.error("Could not start Process! workloadname=workloadName", e)
             }
-            if (process == null){
+            if (process == null) {
                 logger.error { "Process is null!" }
                 throw IllegalArgumentException()
             }

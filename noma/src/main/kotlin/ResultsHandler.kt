@@ -1,6 +1,4 @@
 import com.beust.klaxon.Klaxon
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import java.net.URI
 import java.net.http.HttpClient
@@ -10,7 +8,7 @@ import java.net.http.HttpResponse
 class ResultsHandler {
     companion object {
         private val logger = KotlinLogging.logger {}
-        val client = HttpClient.newHttpClient()
+        private val client: HttpClient = HttpClient.newHttpClient()
         fun returnResult(inv: Invocation, result: InvocationResult) {
             val invResString = Klaxon().toJsonString(result)
             val request = HttpRequest.newBuilder().uri(

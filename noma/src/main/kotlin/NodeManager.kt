@@ -1,7 +1,6 @@
 import kotlinx.coroutines.*
 import mu.KotlinLogging
 import kotlin.time.ExperimentalTime
-import kotlin.time.minutes
 import kotlin.time.seconds
 
 @ExperimentalTime
@@ -18,24 +17,18 @@ class NodeManager {
         "gpu-1" to 500,
         "gpu-2" to 500
     )
-    private var job: Job
-
-    init {
-//        acceleratorTypes.forEach { accelerator -> registerFreedResources(accelerator.value,
-//            acceleratorCurrentlyFree[accelerator.key]!!) }
-        job = GlobalScope.launch {
-            while (isActive) {
-                acceleratorCurrentlyFree.forEach { accelerator ->
-                    if (accelerator.value > 0) {
-                        logger.debug { "Trying to start new Resources for accelerator $accelerator, free=${acceleratorCurrentlyFree[accelerator.key]}" }
-                        startNewResources(accelerator.key, accelerator.value)
-                    }
+    private var job = GlobalScope.launch {
+        while (isActive) {
+            acceleratorCurrentlyFree.forEach { accelerator ->
+                if (accelerator.value > 0) {
+                    logger.debug { "Trying to start new Resources for accelerator $accelerator, free=${acceleratorCurrentlyFree[accelerator.key]}" }
+                    startNewResources(accelerator.key, accelerator.value)
                 }
-                val waitForNewObjects = 15.seconds
-                logger.debug { "Waiting for $waitForNewObjects to start new resources on this node" }
-                if (isActive) {
-                    delay(waitForNewObjects)
-                }
+            }
+            val waitForNewObjects = 15.seconds
+            logger.debug { "Waiting for $waitForNewObjects to start new resources on this node" }
+            if (isActive) {
+                delay(waitForNewObjects)
             }
         }
     }

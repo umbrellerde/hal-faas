@@ -1,13 +1,12 @@
 import json
 import os
+import pickle
 import sys
 import time
 
-import onnx as onnx
-from onnx import numpy_helper
 import onnx
-import pickle
 import onnxruntime as rt
+from onnx import numpy_helper
 
 
 def eprint(*args, **kwargs):

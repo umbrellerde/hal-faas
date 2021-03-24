@@ -1,6 +1,3 @@
-import java.lang.StringBuilder
-import java.util.Random
-
 class RandomIDGenerator {
     companion object {
         private var chars = ('a'..'z') + ('A'..'Z') + ('0'..'9')

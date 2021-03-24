@@ -2,7 +2,7 @@ import org.junit.Test
 
 class RandomGeneratorTest {
     @Test
-    fun testRandoms(){
+    fun testRandoms() {
         val test = RandomIDGenerator.next()
         print(test)
     }

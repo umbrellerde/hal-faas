@@ -21,7 +21,11 @@ data class InvocationParams(
     // callbackUrl to POST the Results to
     val resultBucket: S3Bucket,
     val callbackUrl: String
-)
+) {
+    companion object {
+        fun empty() = InvocationParams(PayloadTypes.VALUE, "", S3Bucket.empty(), "")
+    }
+}
 
 data class Invocation(val runtime: String, var configuration: String, val params: InvocationParams)
 

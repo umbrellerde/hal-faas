@@ -5,7 +5,11 @@ import com.sun.net.httpserver.HttpServer
 import mu.KotlinLogging
 import java.net.InetSocketAddress
 
-class ResultsCollector(private val hostname: String = "localhost", private val port: Int = 3358, private val bw: BenchmarkWriter) {
+class ResultsCollector(
+    private val hostname: String = "localhost",
+    private val port: Int = 3358,
+    private val bw: BenchmarkWriter
+) {
     private val server = HttpServer.create(InetSocketAddress(hostname, port), 0)
 
     init {
@@ -17,7 +21,7 @@ class ResultsCollector(private val hostname: String = "localhost", private val p
         server.stop(0)
     }
 
-    private class ResultsHandler(private val bw: BenchmarkWriter): HttpHandler {
+    private class ResultsHandler(private val bw: BenchmarkWriter) : HttpHandler {
         private val logger = KotlinLogging.logger {}
         override fun handle(t: HttpExchange?) {
             if (t == null) {
