@@ -22,7 +22,7 @@ class Runner(accelerator: String, implInv: ImplementationAndInvocation, noMa: No
                 for (workload in allWorkloads) {
                     val nextInv = client.consumeInvocation(
                         implInv.runtime.name, implInv.inv.configuration,
-                        // Wait 20s if this is only running 1 workload, otherwise wait shorter to ask for other
+                        // Wait 5s if this is only running 1 workload, otherwise wait shorter to ask for other
                         //workloads
                         if (allWorkloads.size == 1) 5 else 1
                     )

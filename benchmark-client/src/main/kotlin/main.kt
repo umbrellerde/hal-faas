@@ -21,7 +21,7 @@ fun main(args: Array<String>) {
     }
 
     logger.info { "Done! Press Enter to Stop collecting Metrics..." }
-    var ignored = readLine()
+    val ignored = readLine()
     logger.trace { ignored }
 
     queueReporter.close()

@@ -14,11 +14,20 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
     private val logger = KotlinLogging.logger {}
     private val client = Socket(url, port)
     private val reader = client.getInputStream().bufferedReader()
-    private fun encodeConfig(config: String) =
-        Base64.getEncoder().encode(config.toByteArray()).toString()
 
+    /**
+     * encode the input config to base64 (if its * then do nothing)
+     */
+    private fun encodeConfig(config: String) =
+        if (config == "*") config
+        else Base64.getEncoder().encode(config.toByteArray()).toString()
+
+    /**
+     * reverse of encodeConfig()
+     */
     private fun decodeConfig(encoded: String) =
-        Base64.getDecoder().decode(encoded).toString()
+        if (encoded == "*") encoded
+        else Base64.getDecoder().decode(encoded).toString()
 
     override fun createInvocation(inv: Invocation): Boolean {
         logger.debug { "CreateInvocation: $inv" }
@@ -43,12 +52,13 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
             ConsumeInvocation {
         logger.debug { "ConsumeInvocation: $runtime, $config, $timeout_s" }
         val timeoutReachedMs = System.currentTimeMillis() + (timeout_s * 1000)
-        val message = "GetJob\nname: $runtime.${encodeConfig(config)}\nconnection: wait\ntimeout: $timeout_s\n\n"
+        val configEncoded = if (config == "*") config else encodeConfig(config)
+        val message = "GetJob\nname: $runtime.${encodeConfig(configEncoded)}\nconnection: wait\ntimeout: $timeout_s\n\n"
         var res: ParsedResponse
         do {
             res = runCommand(message)
             // TODO Bedrock doesn't recognize timeout parameter??
-            delay(1100)
+            if (res.status != 200) delay(1100)
         } while (res.status == 404 && timeoutReachedMs < System.currentTimeMillis())
 
         return if (res.status == 200) {
@@ -112,7 +122,7 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
             for (job in availWorkloads) {
                 logger.debug { "Searching for invocations for workload ${job[0]} on runtime $runtimeName" }
                 val queryJobs =
-                    "Query\nquery: select name from jobs where name = '$runtimeName.${job[0]}';\nformat: json\n\n"
+                    "Query\nquery: select name from jobs where name = '$runtimeName.${encodeConfig(job[0])}';\nformat: json\n\n"
                 val availJobs = runCommand(queryJobs)
                 if (availJobs.payload.isNotEmpty()) {
                     val inv = consumeInvocation(runtime = runtimeName, timeout_s = 5)
