@@ -3,8 +3,9 @@ import mu.KotlinLogging
 import kotlin.time.ExperimentalTime
 
 @ExperimentalTime
-suspend fun main() {
+suspend fun main(args: Array<String>) {
     val logger = KotlinLogging.logger {}
+    Settings.set(args)
     var read: String? = ""
 //    logger.info { "Press Enter to start" }
 //    read = readLine()

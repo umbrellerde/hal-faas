@@ -4,6 +4,7 @@ import com.beust.klaxon.Klaxon
 import kotlinx.coroutines.delay
 import mu.KotlinLogging
 import java.net.Socket
+import java.nio.charset.Charset
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -18,16 +19,16 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
     /**
      * encode the input config to base64 (if its * then do nothing)
      */
-    private fun encodeConfig(config: String) =
-        if (config == "*") config
-        else Base64.getEncoder().encode(config.toByteArray()).toString()
+    private fun encodeConfig(config: String) = config
+//        if (config == "*") config
+//        else Base64.getEncoder().encode(config.toByteArray(Charset.forName("UTF-8"))).toString()
 
     /**
      * reverse of encodeConfig()
      */
-    private fun decodeConfig(encoded: String) =
-        if (encoded == "*") encoded
-        else Base64.getDecoder().decode(encoded).toString()
+    private fun decodeConfig(encoded: String) = encoded
+//        if (encoded == "*") encoded
+//        else Base64.getDecoder().decode(encoded).toString()
 
     override fun createInvocation(inv: Invocation): Boolean {
         logger.debug { "CreateInvocation: $inv" }
@@ -63,8 +64,8 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
 
         return if (res.status == 200) {
             val rawResponse = Klaxon().parse<BedrockJobResponse>(res.payload)!!
-            val splitName = rawResponse.name.split(".")
-            ConsumeInvocation(Invocation(splitName[0], splitName[1], rawResponse.data), 200)
+            val splitName = rawResponse.name.split(".", limit = 2)
+            ConsumeInvocation(Invocation(splitName[0], decodeConfig(splitName[1]), rawResponse.data), 200)
         } else {
             ConsumeInvocation(Invocation(runtime, config, InvocationParams.empty()), res.status)
         }
@@ -101,9 +102,9 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
         // List of all runtimes that can be run on this acceleratorType
         // select name from runtime r left join runtime_impl ri on r.runtime_id = ri.runtime_id where ri.accelerator_type = 'gpu';
         val queryRuntime =
-            "Query\nquery: select name from runtime r " +
+            "Query\nquery: select r.name, ri.accelerator_type, ri.accelerator_amount from runtime r " +
                     "left join runtime_impl ri on r.runtime_id = ri.runtime_id " +
-                    "where ri.accelerator_type ='$acceleratorType';\nformat: json\n\n"
+                    "where ri.accelerator_type ='$acceleratorType' and ri.accelerator_amount <= $acceleratorAmount;\nformat: json\n\n"
         val jsonResponse = runCommandJson(queryRuntime)
         val runtimes = turnBedrockJsonToListOfList(jsonResponse.response)
 
@@ -113,32 +114,24 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
             //List of all workloads that can be run on this runtime with this acceleratorAmount
             logger.debug { "Searching for invocations for runtime $runtimeName" }
             // select name from workload_impl wi left join runtime_impl ri on ri.runtime_impl_id = wi.runtime_impl_id where wi.accelerator_amount < 200;
-            val queryWorkloads =
-                "Query\nquery: select name, accelerator_amount from workload_impl wi " +
-                        "left join runtime_impl ri on ri.runtime_impl_id = wi.runtime_impl_id " +
-                        "where wi.accelerator_amount <= $acceleratorAmount" +
-                        ";\nformat: json\n\n"
-            val availWorkloads = turnBedrockJsonToListOfList(runCommandJson(queryWorkloads).response)
-            for (job in availWorkloads) {
-                logger.debug { "Searching for invocations for workload ${job[0]} on runtime $runtimeName" }
-                val queryJobs =
-                    "Query\nquery: select name from jobs where name = '$runtimeName.${encodeConfig(job[0])}';\nformat: json\n\n"
-                val availJobs = runCommand(queryJobs)
-                if (availJobs.payload.isNotEmpty()) {
-                    val inv = consumeInvocation(runtime = runtimeName, timeout_s = 5)
-                    if (inv.status != 200) {
-                        logger.debug { "Invocation $inv is not suitable for starting" }
-                        continue
-                    }
-                    logger.debug { "Found invocation to start: $inv" }
-                    return ImplementationAndInvocation(
-                        true, inv.inv, getRuntimeImplementation(
-                            acceleratorType,
-                            runtimeName,
-                        ),
-                        job[1].toInt()
-                    )
+            val queryJobs =
+                "Query\nquery: select name from jobs where name like '$runtimeName.%';\nformat: json\n\n"
+            val availJobs = runCommand(queryJobs)
+            if (availJobs.payload.isNotEmpty()) {
+                val inv = consumeInvocation(runtime = runtimeName, timeout_s = 5)
+                if (inv.status != 200) {
+                    logger.debug { "Invocation $inv is not suitable for starting" }
+                    continue
                 }
+                logger.debug { "Found invocation to start: $inv" }
+                return ImplementationAndInvocation(
+                    true, inv.inv, getRuntimeImplementation(
+                        acceleratorType,
+                        runtimeName,
+                    ),
+                    // accelerator_amount
+                    runtime[2].toInt()
+                )
             }
         }
         return ImplementationAndInvocation(
@@ -249,34 +242,47 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
         logger.info { "Create runtime: $res" }
         res = createTable(
             "runtime_impl",
-            "runtime_impl_id integer primary key autoincrement, accelerator_type text not null, location text not null, runtime_id int, Foreign Key (runtime_id) References runtime(runtime_id)"
+            "runtime_impl_id integer primary key autoincrement, accelerator_type text not null, " +
+                    "accelerator_amount int, " +
+                    "location text not null, runtime_id int, Foreign Key (runtime_id) References runtime(runtime_id)"
         )
         logger.info { "Create runtime_impl: $res" }
-        res = createTable(
-            "workload_impl",
-            "workload_impl_id integer primary key autoincrement, name text not null, accelerator_amount integer not " +
-                    "null, runtime_impl_id" +
-                    " integer, Foreign Key (runtime_impl_id) References runtime_impl(runtime_impl_id)"
-        )
-        logger.info { "Create workload_impl: $res" }
+//        res = createTable(
+//            "workload_impl",
+//            "workload_impl_id integer primary key autoincrement, name text not null, accelerator_amount integer not " +
+//                    "null, runtime_impl_id" +
+//                    " integer, Foreign Key (runtime_impl_id) References runtime_impl(runtime_impl_id)"
+//        )
+//        logger.info { "Create workload_impl: $res" }
         res = runCommand("Query: Insert into runtime (name) values ('helloWorld');\n\n")
-        logger.info { "Insert runtime: $res" }
+        logger.info { "Insert helloWorld runtime: $res" }
         res = runCommand(
-            "Query: Insert into runtime_impl (accelerator_type, location, runtime_id) values ('gpu', " +
+            "Query: Insert into runtime_impl (accelerator_type, accelerator_amount, location, runtime_id) values " +
+                    "('gpu', 200, " +
                     "'helloWorld', 1);\n\n"
         )
-        logger.info { "Insert runtime_impl: $res" }
+        logger.info { "Insert helloWorld runtime_impl: $res" }
+
+        res = runCommand("Query: Insert into runtime (name) values ('onnx');\n\n")
+        logger.info { "Insert onnx runtime: $res" }
         res = runCommand(
-            "Query: Insert into workload_impl (name, accelerator_amount, runtime_impl_id) values ('wl-1', 20, 1);\n\n"
+            "Query: Insert into runtime_impl (accelerator_type, accelerator_amount, location, runtime_id) values " +
+                    "('gpu', 200, " +
+                    "'onnx', 2);\n\n"
         )
-        logger.info { "Insert workload_impl: $res" }
-        res = runCommand(
-            "Query: Insert into workload_impl (name, accelerator_amount, runtime_impl_id) values " +
-                    "('wl-2', 20," +
-                    " 1" +
-                    ");\n\n"
-        )
-        logger.info { "Insert workload_impl: $res" }
+        logger.info { "Insert onnx runtime_impl: $res" }
+
+//        res = runCommand(
+//            "Query: Insert into workload_impl (name, accelerator_amount, runtime_impl_id) values ('wl-1', 20, 1);\n\n"
+//        )
+//        logger.info { "Insert workload_impl: $res" }
+//        res = runCommand(
+//            "Query: Insert into workload_impl (name, accelerator_amount, runtime_impl_id) values " +
+//                    "('wl-2', 20," +
+//                    " 1" +
+//                    ");\n\n"
+//        )
+//        logger.info { "Insert workload_impl: $res" }
         // Query: insert into runtime (name) values ('test'); hat lastInsertRowID: 1
         // Query: insert into runtime_impl (accelerator_type, location, runtime_id) values ('acc', 'loc', 1);
         // Query: select * from runtime_impl where runtime_id=(select runtime_id from runtime where name='test');

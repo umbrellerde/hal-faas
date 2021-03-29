@@ -17,8 +17,22 @@ typealias runningMap = MutableMap<String, MutableMap<String, SingleInvocationCon
 class ConsumeHelper {
     val logger = KotlinLogging.logger {}
     val running: runningMap = mutableMapOf()
-    fun consumeInvocation(runtime: String = "*", config: String = "*", timeout: Int = 5): Invocation? {
-        return null
+    fun consumeInvocation(runtime: String = "*", config: String = "*", timeout_s: Long = 5): ConsumeInvocation? {
+        val getter = synchronized(running) {
+            if (running[runtime] == null) {
+                running[runtime] = HashMap()
+            }
+            val getter = running[runtime]?.get(config)
+            if (getter == null) {
+                val newGet = SingleInvocationConfig(runtime, config, running)
+                running[runtime]?.set(config, newGet)
+                return@synchronized newGet
+            } else {
+                return@synchronized getter
+            }
+        }
+
+        return getter.requestInvocation(timeout_s)
     }
 }
 
@@ -28,9 +42,9 @@ class ConsumeHelper {
 class Request(val timeout_s: Long = 5) {
     val logger = KotlinLogging.logger {}
     val latch = CountDownLatch(1)
-    var inv: Invocation? = null
+    var inv: ConsumeInvocation? = null
 
-    data class MaybeInvocation(val inv: Invocation?, val timeout: Boolean)
+    data class MaybeInvocation(val inv: ConsumeInvocation?, val timeout: Boolean)
     fun waitForInvocation(): MaybeInvocation {
         // Wait timeout for an invocation
         val success = latch.await(timeout_s, TimeUnit.SECONDS)
@@ -40,7 +54,7 @@ class Request(val timeout_s: Long = 5) {
         return MaybeInvocation(inv, !success)
     }
 
-    fun giveInvocation(inv: Invocation): Boolean {
+    fun giveInvocation(inv: ConsumeInvocation): Boolean {
         if (latch.count == 0L) {
             // timeout has already happened...
             logger.error { "Trying to give invocation to Request that has already timed out..." }
@@ -62,7 +76,7 @@ class SingleInvocationConfig(private val runtime: String, private val config: St
         GlobalScope.launch {
             val bc = BedrockClient()
             while (isActive) {
-                // Wait up to 10 seconds for a request. If there is none shutdown this coroutine.
+                // Wait up for a request. If there is none shutdown this coroutine.
                 val req = requests.poll(2, TimeUnit.MINUTES)
                 if(req == null) {
                     val itWasAFluke = synchronized(running) {
@@ -82,7 +96,7 @@ class SingleInvocationConfig(private val runtime: String, private val config: St
                     // request is not null
                     val inv = bc.consumeInvocation(runtime, config, req.timeout_s.toInt())
                     if (inv.status == 200) {
-                        val worked = req.giveInvocation(inv.inv)
+                        val worked = req.giveInvocation(inv)
                         if (!worked) {
                             // We have the invocation but we can't give it to this request anymore
                             // This is a prototype, just reschedule it.
@@ -94,7 +108,7 @@ class SingleInvocationConfig(private val runtime: String, private val config: St
             }
         }
     }
-    fun requestInvocation(timeout_s: Long): Invocation? {
+    fun requestInvocation(timeout_s: Long): ConsumeInvocation? {
         val r = Request(timeout_s)
         requests.add(r)
         val (inv, timeout) = r.waitForInvocation()

@@ -1,3 +1,4 @@
+import com.beust.klaxon.Klaxon
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -13,9 +14,12 @@ class BenchmarkRunner(
     val bc: BedrockClient,
     val bw: BenchmarkWriter,
     val bench: BenchmarkDefinition,
-    val runtime: String = "helloWorld",
-    val workload: String = "bucket|yolov4.onnx",
-    val payload: String = "payload",
+    val runtime: String = "onnx",
+    val workload: String = "test|yolov4.onnx",
+    val payload: S3File = S3File(
+        S3Bucket(bucketName = "test"),
+        "street.jpg"
+    ),
     val callbackBase: String = "localhost:3358",
 ) {
     private val logger = KotlinLogging.logger {}
@@ -23,7 +27,7 @@ class BenchmarkRunner(
         val inv =
             Invocation(
                 runtime, workload, InvocationParams(
-                    PayloadTypes.REFERENCE, payload, S3Bucket.empty(),
+                    PayloadTypes.REFERENCE, payload, "", S3Bucket(bucketName = "results"),
                     callbackBase + "/" + RandomIDGenerator.next()
                 )
             )

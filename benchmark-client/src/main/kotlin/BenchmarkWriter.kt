@@ -69,7 +69,7 @@ class BenchmarkWriter(private val runName: String, private val folder: String = 
         targetFile.parentFile.mkdirs()
         val writer = targetFile.bufferedWriter()
         writer.write(
-            "runtime;staticParam;volatileParam;callbackUrl;start;end;start_computation;end_computation;" +
+            "runtime;inputConfig;inputData;callbackUrl;start;end;start_computation;end_computation;" +
                     "result\n"
         )
         allInvocations.forEach {

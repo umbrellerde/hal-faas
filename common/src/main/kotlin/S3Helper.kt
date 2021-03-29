@@ -1,4 +1,4 @@
-import io.minio.GetObjectArgs
+import io.minio.DownloadObjectArgs
 import io.minio.MinioClient
 import io.minio.UploadObjectArgs
 import mu.KotlinLogging
@@ -17,24 +17,34 @@ class S3Helper {
         ).build()
         private val logger = KotlinLogging.logger {}
 
-        fun download(bucket: String, objectName: String, subfolder: File, s3Client: MinioClient = this.s3Client): File {
+        fun download(
+            bucket: String,
+            objectName: String,
+            subfolder: File,
+            s3Client: MinioClient = Companion.s3Client
+        ): File {
+            assert(subfolder.isDirectory)
             logger.debug { "Downloading $bucket / $objectName to $subfolder" }
-            val objStream = s3Client.getObject(
-                GetObjectArgs.builder()
-                    .bucket(bucket)
-                    .`object`(objectName)
+//            val objStream = s3Client.getObject(
+//                GetObjectArgs.builder()
+//                    .bucket(bucket)
+//                    .`object`(objectName)
+//                    .build()
+//            )
+            s3Client.downloadObject(
+                DownloadObjectArgs.builder().bucket(bucket).`object`(objectName)
+                    .filename(subfolder.absolutePath + File.separator + objectName)
                     .build()
             )
-            val destFile = File(subfolder, objectName)
-            objStream.copyTo(destFile.outputStream())
-            destFile.outputStream().close()
-            objStream.close()
-            logger.debug { "Created File @ ${destFile.absolutePath}" }
-            return destFile
+//            objStream.copyTo(destFile.outputStream())
+//            destFile.outputStream().close()
+//            objStream.close()
+            logger.debug { "Created File @ ${File(subfolder, objectName).absolutePath}" }
+            return File(subfolder, objectName)
         }
 
         fun getInputConfiguration(bucket: String, objectName: String): File {
-            val bucketFolder = File(configFolder, "$bucket/")
+            val bucketFolder = File(configFolder, "$bucket/").apply { mkdirs() }
             val destFile = File(bucketFolder, objectName)
 
             return if (destFile.exists()) {
@@ -46,7 +56,7 @@ class S3Helper {
         }
 
         fun getInputData(s3obj: S3File): File {
-            val bucketFolder = File(dataFolder, "${s3obj.bucket}/")
+            val bucketFolder = File(dataFolder, "${s3obj.bucket.bucketName}/").apply { mkdirs() }
             val destFile = File(bucketFolder, s3obj.file)
 
             return if (destFile.exists()) {

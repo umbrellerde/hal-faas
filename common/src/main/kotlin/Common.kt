@@ -2,7 +2,9 @@ enum class PayloadTypes {
     REFERENCE, VALUE
 }
 
-data class S3Bucket(val endpoint: String, val accessKey: String, val secretKey: String, val bucketName: String) {
+data class S3Bucket(val endpoint: String = Settings.s3Endpoint, val accessKey: String = Settings.s3AccessKey, val secretKey:
+String = Settings.s3SecretKey, val bucketName:
+String) {
     companion object {
         fun empty(): S3Bucket {
             return S3Bucket("", "", "", "")
@@ -13,17 +15,22 @@ data class S3Bucket(val endpoint: String, val accessKey: String, val secretKey: 
 /**
  * Used for inputdata that is a reference. In this case the inv.params String is of this type.
  */
-data class S3File(val bucket: S3Bucket, val file: String)
+data class S3File(val bucket: S3Bucket, val file: String) {
+    companion object {
+        fun empty() = S3File(S3Bucket.empty(), "")
+    }
+}
 
 data class InvocationParams(
     val payload_type: PayloadTypes = PayloadTypes.REFERENCE,
+    var payload_reference: S3File,
     var payload: String,
     // callbackUrl to POST the Results to
     val resultBucket: S3Bucket,
     val callbackUrl: String
 ) {
     companion object {
-        fun empty() = InvocationParams(PayloadTypes.VALUE, "", S3Bucket.empty(), "")
+        fun empty() = InvocationParams(PayloadTypes.VALUE, S3File.empty(), "", S3Bucket.empty(),"")
     }
 }
 

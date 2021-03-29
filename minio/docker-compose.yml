@@ -7,6 +7,6 @@ services:
     volumes:
       - ./minio:/data
     environment:
-      MINIO_ACCESS_KEY: "adminadmin"
-      MINIO_SECRET_KEY: "adminadmin"
+      MINIO_ACCESS_KEY: "minio-admin"
+      MINIO_SECRET_KEY: "minio-admin"
     command: server /data
