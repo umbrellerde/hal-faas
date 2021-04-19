@@ -1,3 +1,5 @@
+import com.beust.klaxon.JsonObject
+
 enum class PayloadTypes {
     REFERENCE, VALUE
 }
@@ -48,17 +50,17 @@ data class RuntimeImplementation(val acceleratorType: String, val name: String, 
 data class InvocationResult(
     val request: String,
     val accelerator: String,
-    val amount: Int,
+    var amount: Int? = -1,
     val pid: String,
     val result_type: String,
-    var result: List<String>,
-    val metadata: String,
-    var start_computation: Long,
-    var end_computation: Long
+    var result: java.util.ArrayList<String>,
+    var metadata: Map<String, Any>?,
+    var start_computation: Long? = -1,
+    var end_computation: Long? = -1
 ) {
     companion object {
         fun empty(): InvocationResult {
-            return InvocationResult("", "", -1, "", "", listOf(""), "", -1, -1)
+            return InvocationResult("", "", -1 as Int, "", "", ArrayList(), null, -1, -1)
         }
     }
 }

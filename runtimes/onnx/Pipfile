@@ -9,10 +9,10 @@ numpy = "*"
 matplotlib = "*"
 scipy = "*"
 opencv-python = "*"
-onnxruntime = "*"
 protobuf = "*"
+onnxruntime-gpu = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.7"
+python_version = "3.6"

@@ -6,6 +6,7 @@ import time
 
 import onnx
 import onnxruntime as rt
+import traceback
 from onnx import numpy_helper
 
 
@@ -25,9 +26,8 @@ if __name__ == '__main__':
     amount = sys.argv[2]
     try:
         while True:
-            params = input()
-            # eprint("Got Input: ")
-            # eprint(params)
+            # input() #
+            params = '{"configuration": "/home/trever/git/hal-faas/s3cache/configs/test/yolov4.onnx", "params": {"payload":"/home/trever/git/hal-faas/s3cache/data/test/input1.pb"}}'  #
             request = json.loads(params)
 
             # Load tensor
@@ -40,7 +40,19 @@ if __name__ == '__main__':
             # Run Inference
             start = time.time()
 
-            sess = rt.InferenceSession(request['configuration'])
+            providers = [
+                ('CUDAExecutionProvider', {
+                    'device_id': 0,
+                    'arena_extend_strategy': 'kSameAsRequested',
+                    'cuda_mem_limit': amount * 1024 * 1024,  # Amount is in MB, parameter expects bytes
+                    'cudnn_conv_algo_search': 'EXHAUSTIVE',
+                    'do_copy_in_default_stream': True,
+                })
+            ]
+            # Apparently there is no good way to find out how much memory is actually used: https://pytorch.org/docs/stable/notes/faq.html
+            # But lets hope this works...
+
+            sess = rt.InferenceSession(request['configuration'], providers=providers)
             outputs = sess.get_outputs()
             output_names = list(map(lambda output: output.name, outputs))
             input_name = sess.get_inputs()[0].name
@@ -48,9 +60,11 @@ if __name__ == '__main__':
             detections = sess.run(output_names, {input_name: image_data})
 
             duration_ms = (time.time() - start) * 1000
+            # Stop the session to hopefully release some memory...
+            del sess
 
             # Write output to file (that will be uploaded to s3 by worker node)
-            output_folder = f'./{os.getppid()}/outputs/'
+            output_folder = f'./outputs/{os.getppid()}/'
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder)
             output_file = "output.bin"
@@ -60,18 +74,20 @@ if __name__ == '__main__':
                 pickle.dump(detections, f)
 
             # Return Result to Worker Node
-            metadata = json.dumps({
+            metadata = {
                 'inference_ms': duration_ms
-            })
+            }
             result = {
                 'request': request,
                 'accelerator': accelerator,
-                'amount': amount,
-                'pid': os.getppid(),
+                # 'amount': int(amount),
+                'pid': str(os.getppid()),
                 'result_type': 'reference',  # 'reference' or 'value'
                 'result': [os.path.abspath(output_path)],
                 'metadata': metadata
             }
             print(json.dumps(result), flush=True)
-    except:
+    except Exception as e:
+        traceback.print_exc()
+        eprint(f'Exiting pid {os.getppid()} with error {e}')
         exit(1)

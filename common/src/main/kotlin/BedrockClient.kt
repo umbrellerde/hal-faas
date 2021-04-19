@@ -149,6 +149,9 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
                     .replace("\n", " ")
             })"
         }
+        companion object {
+            fun empty() = ParsedResponse(-1, "", "empty")
+        }
     }
 
     /**
@@ -156,7 +159,15 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
      */
     private fun parseResponse(): ParsedResponse {
         val debugInformation = StringBuilder().append(reader.readLine())
-        val status = debugInformation.substring(0, 3).toInt()
+        val status = try {
+            debugInformation.substring(0, 3).toInt()
+        } catch (e: Exception) {
+            logger.error { "Was not able to get Status from debugInformation=$debugInformation. Rest of Reader: " +
+                    reader.lineSequence().joinToString { "," }
+            }
+            return ParsedResponse.empty()
+        }
+
         while (true) {
             val line = reader.readLine()
             when {

@@ -1,5 +1,6 @@
 .venv
 bedrock
+s3cache
 # Created by https://www.toptal.com/developers/gitignore/api/java,kotlin,maven,linux,intellij
 # Edit at https://www.toptal.com/developers/gitignore?templates=java,kotlin,maven,linux,intellij
 

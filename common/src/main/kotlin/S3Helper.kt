@@ -25,20 +25,11 @@ class S3Helper {
         ): File {
             assert(subfolder.isDirectory)
             logger.debug { "Downloading $bucket / $objectName to $subfolder" }
-//            val objStream = s3Client.getObject(
-//                GetObjectArgs.builder()
-//                    .bucket(bucket)
-//                    .`object`(objectName)
-//                    .build()
-//            )
             s3Client.downloadObject(
                 DownloadObjectArgs.builder().bucket(bucket).`object`(objectName)
                     .filename(subfolder.absolutePath + File.separator + objectName)
                     .build()
             )
-//            objStream.copyTo(destFile.outputStream())
-//            destFile.outputStream().close()
-//            objStream.close()
             logger.debug { "Created File @ ${File(subfolder, objectName).absolutePath}" }
             return File(subfolder, objectName)
         }

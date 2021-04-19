@@ -1,3 +1,4 @@
+import com.beust.klaxon.Klaxon
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
@@ -64,26 +65,27 @@ class BenchmarkWriter(private val runName: String, private val folder: String = 
         val isoTime = df.format(Date())
 
         // Write Invocation Results
-        val pathName = "$folder/${isoTime}_inv_${runName}.csv"
+        val pathName = "$folder/${isoTime}_inv_${runName}.json"
         val targetFile = File(pathName)
         targetFile.parentFile.mkdirs()
         val writer = targetFile.bufferedWriter()
-        writer.write(
-            "runtime;inputConfig;inputData;callbackUrl;start;end;start_computation;end_computation;" +
-                    "result\n"
-        )
-        allInvocations.forEach {
-            if (it.result == null) {
-                logger.error { "Computation $it has no Result!" }
-                it.result = InvocationResult.empty()
-            }
-            val escapedJson = it.result!!.result.joinToString(",", "[", "]")
-            writer.write(
-                "\"${it.inv.runtime}\";\"${it.inv.configuration}\";\"${it.inv.params.payload}\";" +
-                        "\"${it.inv.params.callbackUrl}\";\"${it.start}\";\"${it.end}\";\"${it.result!!.start_computation}\";" +
-                        "\"${it.result!!.end_computation}\";\"${escapedJson}\"\n"
-            )
-        }
+        writer.write(Klaxon().toJsonString(allInvocations))
+//        writer.write(
+//            "runtime;inputConfig;inputData;callbackUrl;start;end;start_computation;end_computation;" +
+//                    "result\n"
+//        )
+//        allInvocations.forEach {
+//            if (it.result == null) {
+//                logger.error { "Computation $it has no Result!" }
+//                it.result = InvocationResult.empty()
+//            }
+//            val escapedJson = it.result!!.result.joinToString("\",\"", "[ \"", "\"]")
+//            writer.write(
+//                "\"${it.inv.runtime}\";\"${it.inv.configuration}\";\"${it.inv.params.payload}\";" +
+//                        "\"${it.inv.params.callbackUrl}\";\"${it.start}\";\"${it.end}\";\"${it.result!!.start_computation}\";" +
+//                        "\"${it.result!!.end_computation}\";\"${escapedJson}\"\n"
+//            )
+//        }
         writer.close()
 
         val pathQueueName = "$folder/${isoTime}_queue_${runName}.csv"

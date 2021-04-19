@@ -18,7 +18,7 @@ class BenchmarkRunner(
     val workload: String = "test|yolov4.onnx",
     val payload: S3File = S3File(
         S3Bucket(bucketName = "test"),
-        "street.jpg"
+        "input1.pb"
     ),
     val callbackBase: String = "localhost:3358",
 ) {

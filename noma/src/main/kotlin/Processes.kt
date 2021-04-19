@@ -11,6 +11,9 @@ class Processes {
         init {
             Runtime.getRuntime().addShutdownHook(
                 Thread {
+                    if (processes.isNotEmpty()) {
+                        logger.warn { processes.joinToString (", ", prefix = "Currently running:") }
+                    }
                     processes.forEach {
                         logger.debug { "Shutting down process ${it.pid()}" }
                         it.destroy()

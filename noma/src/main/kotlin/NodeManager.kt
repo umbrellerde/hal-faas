@@ -18,14 +18,16 @@ class NodeManager {
         "gpu-2" to 500
     )
     private var job = GlobalScope.launch {
+        var firstResourcesStarted = false
         while (isActive) {
             acceleratorCurrentlyFree.forEach { accelerator ->
                 if (accelerator.value > 0) {
                     logger.debug { "Trying to start new Resources for accelerator $accelerator, free=${acceleratorCurrentlyFree[accelerator.key]}" }
-                    startNewResources(accelerator.key, accelerator.value)
+                    val success = startNewResources(accelerator.key, accelerator.value)
+                    if (!firstResourcesStarted && success) firstResourcesStarted = true
                 }
             }
-            val waitForNewObjects = 15.seconds
+            val waitForNewObjects = if (firstResourcesStarted) 10.seconds else 2.seconds
             logger.debug { "Waiting for $waitForNewObjects to start new resources on this node" }
             if (isActive) {
                 delay(waitForNewObjects)
@@ -46,7 +48,7 @@ class NodeManager {
         acceleratorCurrentlyFree[key] = currentFree + value
     }
 
-    private suspend fun startNewResources(accelerator: String, amount: Int) {
+    private suspend fun startNewResources(accelerator: String, amount: Int, alreadyStarted: Boolean = false): Boolean {
         logger.debug { "Trying to start new runtime_implementation on $accelerator, amount=$amount" }
         val acceleratorType = acceleratorTypes[accelerator]
         val nextRInv = bc.getNextRuntimeAndInvocationToStart(acceleratorType!!, amount)
@@ -65,8 +67,11 @@ class NodeManager {
         }
         // We started something but we didn't use every freed resource
         val restFreeAmount = amount - changedAmount
-        if (changedAmount != -1 && restFreeAmount > 0) {
-            startNewResources(accelerator, restFreeAmount)
+        return if (changedAmount != -1 && restFreeAmount > 0) {
+            startNewResources(accelerator, restFreeAmount, true)
+        } else {
+            // Nothing different to start
+            alreadyStarted
         }
     }
 

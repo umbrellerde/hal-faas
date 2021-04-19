@@ -5,7 +5,7 @@ import mu.KotlinLogging
 import kotlin.time.ExperimentalTime
 
 @ExperimentalTime
-class Runner(accelerator: String, implInv: ImplementationAndInvocation, noMa: NodeManager) {
+class Runner(accelerator: String, private val implInv: ImplementationAndInvocation, noMa: NodeManager) {
     private val logger = KotlinLogging.logger {}
     val pid = Processes.startProcess(implInv.runtime, accelerator, implInv.amount.toString())
 
@@ -59,6 +59,7 @@ class Runner(accelerator: String, implInv: ImplementationAndInvocation, noMa: No
         val startComputation = System.currentTimeMillis()
 
         // maybe download the inputconfiguration, but update "configuration" parameter to the file path either way
+        // runtime|configuration
         val split = inv.configuration.split("|")
         val invConfFile = S3Helper.getInputConfiguration(split[0], split[1])
         inv.configuration = invConfFile.absolutePath
@@ -78,12 +79,13 @@ class Runner(accelerator: String, implInv: ImplementationAndInvocation, noMa: No
         val responseParsed = Klaxon().parse<InvocationResult>(response)!!
         responseParsed.start_computation = startComputation
         responseParsed.end_computation = System.currentTimeMillis()
+        responseParsed.amount = implInv.amount
         logger.info { "Process called with $inv, returned $responseParsed" }
 
         if (responseParsed.result_type == "reference") {
             logger.info { "Uploading file ${responseParsed.result} to s3://" }
             val files = S3Helper.uploadFiles(responseParsed.result, inv.params.resultBucket)
-            responseParsed.result = files
+            responseParsed.result = ArrayList(files)
         }
 
         ResultsHandler.returnResult(inv, responseParsed)

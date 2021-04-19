@@ -17,7 +17,8 @@ typealias runningMap = MutableMap<String, MutableMap<String, SingleInvocationCon
 class ConsumeHelper {
     val logger = KotlinLogging.logger {}
     val running: runningMap = mutableMapOf()
-    fun consumeInvocation(runtime: String = "*", config: String = "*", timeout_s: Long = 5): ConsumeInvocation? {
+    suspend fun consumeInvocation(runtime: String = "*", config: String = "*", timeout_s: Long = 5):
+            ConsumeInvocation? {
         val getter = synchronized(running) {
             if (running[runtime] == null) {
                 running[runtime] = HashMap()
@@ -45,19 +46,19 @@ class Request(val timeout_s: Long = 5) {
     var inv: ConsumeInvocation? = null
 
     data class MaybeInvocation(val inv: ConsumeInvocation?, val timeout: Boolean)
-    fun waitForInvocation(): MaybeInvocation {
+    fun waitForInvocation(timeout_s: Long = this.timeout_s): MaybeInvocation {
         // Wait timeout for an invocation
         val success = latch.await(timeout_s, TimeUnit.SECONDS)
-        // If it wasnt successful lock the latch so that we can get no invocations in here
+//        // If it wasnt successful lock the latch so that we can get no invocations in here
         if (!success)
             latch.countDown()
         return MaybeInvocation(inv, !success)
     }
 
-    fun giveInvocation(inv: ConsumeInvocation): Boolean {
+    fun giveInvocation(inv: ConsumeInvocation?): Boolean {
         if (latch.count == 0L) {
             // timeout has already happened...
-            logger.error { "Trying to give invocation to Request that has already timed out..." }
+            logger.warn { "Trying to give invocation to Request that has timed out..." }
             return false
         }
         this.inv = inv
@@ -99,16 +100,26 @@ class SingleInvocationConfig(private val runtime: String, private val config: St
                         val worked = req.giveInvocation(inv)
                         if (!worked) {
                             // We have the invocation but we can't give it to this request anymore
-                            // This is a prototype, just reschedule it.
-                                logger.error { "Rescheduling invocation $inv..." }
-                            bc.createInvocation(inv.inv)
+                            logger.error { "Rescheduling invocation $inv..." }
+                            val req = requests.poll(2, TimeUnit.MINUTES)
+                            if (req == null) {
+                                // This is a prototype, just reschedule it.
+                                bc.createInvocation(inv.inv)
+                            } else {
+                                val worked = req.giveInvocation(inv)
+                                if (!worked) {
+                                    bc.createInvocation(inv.inv)
+                                }
+                            }
                         }
+                    } else {
+                        req.giveInvocation(null)
                     }
                 }
             }
         }
     }
-    fun requestInvocation(timeout_s: Long): ConsumeInvocation? {
+    suspend fun requestInvocation(timeout_s: Long): ConsumeInvocation? {
         val r = Request(timeout_s)
         requests.add(r)
         val (inv, timeout) = r.waitForInvocation()
@@ -117,15 +128,18 @@ class SingleInvocationConfig(private val runtime: String, private val config: St
         if (timeout) {
             val changed = requests.remove(r)
             if (!changed) {
-                logger.error { "Trying to remove an invocation, but its already gone... This means it has an " +
-                        "invocation waiting for it and thats bad, because the consumer is already gone." }
-                val gottenInvocation = r.inv
-                if (gottenInvocation == null) {
-                    throw RuntimeException("There is an invocation unnaccounted for somewhere, because it was " +
-                            "consumed from the queue but cannot be gotten from the Request Object...")
-                } else {
-                    return gottenInvocation
-                }
+                // A Coroutine is currently working on this request (because it has taken() this request, so it
+            //cannot be removed)
+                // So lets take this one, even if it takes longer than timeout...
+//                val (inv, timeout) = r.waitForInvocation(timeout_s*2)
+//                if (timeout) {
+//                    logger.error { "There should be an invocation here (or no Invocation) but there was a " +
+//                            "timeout again... I waited ${timeout_s*2} seconds and inv is $inv" }
+//                }
+//                return inv
+                logger.error { "This request is currently getting answered by a coroutine. But the timeout has " +
+                        "already happened, so now its the coroutines problem to give this invocation to another " +
+                        "requester." }
             }
         }
         return inv
