@@ -1,18 +1,12 @@
 ### A Pluto.jl notebook ###
-# v0.12.21
+# v0.14.4
 
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 8fca97a6-881a-11eb-318c-7756eb127ab6
-md"""
-Set up the environment, import packages
-"""
-
 # ╔═╡ 790a9962-881a-11eb-2d1f-e34eabe10138
 begin
 	import Pkg
-	Pkg.activate(mktempdir())
 end
 
 # ╔═╡ 72ea4f46-881a-11eb-0314-4343c5cad805
@@ -31,21 +25,26 @@ begin
 	using JSONTables
 end
 
+# ╔═╡ 8fca97a6-881a-11eb-318c-7756eb127ab6
+md"""
+Set up the environment, import packages
+"""
+
 # ╔═╡ 32417062-881c-11eb-0179-f99feb1bbd6d
 begin
-	json_file = JSON.parsefile("test.json")
+	json_file = JSON.parsefile("2021-05-03T17:56:02_inv_server.json")
 	df =vcat(DataFrame.(json_file)...)
 	df
 end
 
+# ╔═╡ a7059adc-dead-4011-8a02-c4f943d7e459
+df.inv
+
 # ╔═╡ 645ff58a-92f0-11eb-251a-832c536400bf
 begin
-	df.inv = convert.(DataFrame, df.inv)
-	df.result = convert.(DataFrame, df.result)
+	df.inv_p = convert.(DataFrame, df.inv)
+	df.result_p = convert.(DataFrame, df.result)
 end
-
-# ╔═╡ bac20300-92f0-11eb-1b69-b3902b589fc3
-jsontable(json_file)
 
 # ╔═╡ 7f3a779c-922d-11eb-1dd4-15b9f24be0b8
 begin
@@ -88,8 +87,8 @@ end
 # ╠═790a9962-881a-11eb-2d1f-e34eabe10138
 # ╠═72ea4f46-881a-11eb-0314-4343c5cad805
 # ╠═32417062-881c-11eb-0179-f99feb1bbd6d
+# ╠═a7059adc-dead-4011-8a02-c4f943d7e459
 # ╠═645ff58a-92f0-11eb-251a-832c536400bf
-# ╠═bac20300-92f0-11eb-1b69-b3902b589fc3
 # ╠═7f3a779c-922d-11eb-1dd4-15b9f24be0b8
 # ╠═f43eb462-9231-11eb-3e21-159df487f7fc
 # ╠═ec391cc2-9230-11eb-1c51-7ddb37f0d70a
