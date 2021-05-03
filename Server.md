@@ -1,0 +1,6 @@
+- Start minio on Server
+- Upload test/yolov... and test/input0... (ssh -L 9000:localhost:9000 halfaas )
+- Create tunnel for Bedrock (ssh -f -N -T -R 8888:localhost:8888 halfaas)
+- Start Bedrock locally
+- java -jar with both jars.
+- Copy results

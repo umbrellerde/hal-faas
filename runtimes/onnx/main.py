@@ -24,10 +24,14 @@ example_request = {
 if __name__ == '__main__':
     accelerator = sys.argv[1]
     amount = sys.argv[2]
+    os.environ['CUDA_VISIBLE_DEVICES'] = accelerator
+    rt.set_default_logger_severity(4)
     try:
         while True:
             # input() #
-            params = '{"configuration": "/home/trever/git/hal-faas/s3cache/configs/test/yolov4.onnx", "params": {"payload":"/home/trever/git/hal-faas/s3cache/data/test/input1.pb"}}'  #
+            params = '{"configuration": "/home/trever/git/hal-faas/s3cache/configs/test/tinyyolov2-7.onnx", ' \
+                     '"params": {' \
+                     '"payload":"/home/trever/git/hal-faas/s3cache/data/test/input_0_tiny.pb"}}'  #
             request = json.loads(params)
 
             # Load tensor
@@ -40,15 +44,16 @@ if __name__ == '__main__':
             # Run Inference
             start = time.time()
 
-            providers = [
-                ('CUDAExecutionProvider', {
-                    'device_id': 0,
-                    'arena_extend_strategy': 'kSameAsRequested',
-                    'cuda_mem_limit': amount * 1024 * 1024,  # Amount is in MB, parameter expects bytes
-                    'cudnn_conv_algo_search': 'EXHAUSTIVE',
-                    'do_copy_in_default_stream': True,
-                })
-            ]
+            # providers = [
+            #     ('CUDAExecutionProvider', {
+            #         'device_id': 0,
+            #         'arena_extend_strategy': 'kSameAsRequested',
+            #         'cuda_mem_limit': amount * 1024 * 1024,  # Amount is in MB, parameter expects bytes
+            #         'cudnn_conv_algo_search': 'EXHAUSTIVE',
+            #         'do_copy_in_default_stream': True,
+            #     })
+            # ]
+            providers = ["CUDAExecutionProvider"] # Older versions of onnx apparently cannot be configured!
             # Apparently there is no good way to find out how much memory is actually used: https://pytorch.org/docs/stable/notes/faq.html
             # But lets hope this works...
 

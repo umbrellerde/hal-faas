@@ -278,7 +278,7 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
         logger.info { "Insert onnx runtime: $res" }
         res = runCommand(
             "Query: Insert into runtime_impl (accelerator_type, accelerator_amount, location, runtime_id) values " +
-                    "('gpu', 200, " +
+                    "('gpu', 450, " +
                     "'onnx', 2);\n\n"
         )
         logger.info { "Insert onnx runtime_impl: $res" }

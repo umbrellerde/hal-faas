@@ -10,12 +10,12 @@ class NodeManager {
 
     // TODO maybe read this from a config file with acceleratorName, Type, Amount...
     private val acceleratorTypes = mapOf(
-        "gpu-1" to "gpu",
-        "gpu-2" to "gpu"
+        "0" to "gpu",
+        "1" to "gpu"
     )
     private val acceleratorCurrentlyFree = mutableMapOf(
-        "gpu-1" to 500,
-        "gpu-2" to 500
+        "0" to 1000,
+        "1" to 1000
     )
     private var job = GlobalScope.launch {
         var firstResourcesStarted = false

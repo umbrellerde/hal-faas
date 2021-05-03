@@ -1,4 +1,5 @@
 import com.beust.klaxon.Klaxon
+import kotlinx.coroutines.delay
 import mu.KotlinLogging
 import java.io.File
 
@@ -43,12 +44,15 @@ class Processes {
             return process.pid().toString()
         }
 
-        fun invoke(name: String, inv: Invocation): String {
+        suspend fun invoke(name: String, inv: Invocation): String {
             logger.info { "Invoke was called on $name with params: $inv" }
             val process = processes.find { it.pid().toString() == name }!!
             val json = Klaxon().toJsonString(inv).replace("\n", "")
             process.outputStream.write("$json\n".toByteArray())
             process.outputStream.flush()
+            if (process.inputStream == null) {
+                delay(500)
+            }
             return process.inputStream.bufferedReader().readLine()
         }
 

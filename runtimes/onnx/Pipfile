@@ -11,6 +11,8 @@ scipy = "*"
 opencv-python = "*"
 protobuf = "*"
 onnxruntime-gpu = "*"
+onnxruntime-tools = "*"
+sympy = "*"
 
 [dev-packages]
 

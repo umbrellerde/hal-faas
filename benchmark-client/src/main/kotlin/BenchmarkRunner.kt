@@ -15,10 +15,10 @@ class BenchmarkRunner(
     val bw: BenchmarkWriter,
     val bench: BenchmarkDefinition,
     val runtime: String = "onnx",
-    val workload: String = "test|yolov4.onnx",
+    val workload: String = "test|tinyyolov2-7.onnx",
     val payload: S3File = S3File(
         S3Bucket(bucketName = "test"),
-        "input1.pb"
+        "input_0_tiny.pb"
     ),
     val callbackBase: String = "localhost:3358",
 ) {

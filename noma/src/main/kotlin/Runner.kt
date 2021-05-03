@@ -55,7 +55,7 @@ class Runner(accelerator: String, private val implInv: ImplementationAndInvocati
         }
     }
 
-    fun invoke(inv: Invocation) {
+    suspend fun invoke(inv: Invocation) {
         val startComputation = System.currentTimeMillis()
 
         // maybe download the inputconfiguration, but update "configuration" parameter to the file path either way
