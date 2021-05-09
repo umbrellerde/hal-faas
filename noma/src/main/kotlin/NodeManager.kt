@@ -9,17 +9,33 @@ class NodeManager {
     private val logger = KotlinLogging.logger {}
 
     // TODO maybe read this from a config file with acceleratorName, Type, Amount...
-    private val acceleratorTypes = mapOf(
-        "0" to "gpu",
-        "1" to "gpu"
-    )
-    private val acceleratorCurrentlyFree = mutableMapOf(
-        "0" to 1000,
-        "1" to 1000
-    )
+    private val acceleratorTypes =
+        if (System.getProperty("user.name").equals("trever")) {
+            mapOf(
+                "0" to "gpu",
+            )
+        } else {
+            mapOf(
+                "0" to "gpu",
+                "1" to "gpu"
+            )
+        }
+
+    private val acceleratorCurrentlyFree =
+        if (System.getProperty("user.name").equals("trever")) {
+            mutableMapOf(
+                "0" to 2000,
+            )
+        } else {
+            mutableMapOf(
+                "0" to 1500,
+                "1" to 1500
+            )
+        }
     private var job = GlobalScope.launch {
         var firstResourcesStarted = false
         while (isActive) {
+            logger.debug { "Free Resources: $acceleratorCurrentlyFree" }
             acceleratorCurrentlyFree.forEach { accelerator ->
                 if (accelerator.value > 0) {
                     logger.debug { "Trying to start new Resources for accelerator $accelerator, free=${acceleratorCurrentlyFree[accelerator.key]}" }
@@ -28,7 +44,7 @@ class NodeManager {
                 }
             }
             val waitForNewObjects = if (firstResourcesStarted) 10.seconds else 2.seconds
-            logger.debug { "Waiting for $waitForNewObjects to start new resources on this node" }
+            logger.debug { "Waiting for $waitForNewObjects to start new resources on this node ($acceleratorCurrentlyFree)" }
             if (isActive) {
                 delay(waitForNewObjects)
             }
@@ -40,7 +56,7 @@ class NodeManager {
             changeAcceleratorCurrentlyFree(accelerator, amount)
             acceleratorCurrentlyFree[accelerator]!!
         }
-        startNewResources(accelerator, totalFree)
+        //startNewResources(accelerator, totalFree)
     }
 
     private fun changeAcceleratorCurrentlyFree(key: String, value: Int) {
@@ -50,15 +66,31 @@ class NodeManager {
 
     private suspend fun startNewResources(accelerator: String, amount: Int, alreadyStarted: Boolean = false): Boolean {
         logger.debug { "Trying to start new runtime_implementation on $accelerator, amount=$amount" }
+        // Check for free space and reserve space
+        val findAmount = synchronized(acceleratorCurrentlyFree) {
+            val currFree = acceleratorCurrentlyFree[accelerator]!!
+            if (currFree >= amount) {
+                changeAcceleratorCurrentlyFree(accelerator, amount * -1)
+                return@synchronized amount
+            } else {
+                return false
+            }
+        }
+
         val acceleratorType = acceleratorTypes[accelerator]
-        val nextRInv = bc.getNextRuntimeAndInvocationToStart(acceleratorType!!, amount)
+        val nextRInv = bc.getNextRuntimeAndInvocationToStart(acceleratorType!!, findAmount)
         val changedAmount = synchronized(acceleratorCurrentlyFree) {
+            // Give back the space we reserved before calling getNextRuntime
+            // will be removed again if the nextInv was a success, otherwise we will "return" this value to its
+            //original point
+            changeAcceleratorCurrentlyFree(accelerator, amount)
             if (nextRInv.success) {
                 logger.info {
-                    "Starting new runtime_implementation for $accelerator (amount=$amount), " +
-                            "next_op=${nextRInv}"
+                    "Starting new runtime_implementation for $accelerator " +
+                            "(free=${acceleratorCurrentlyFree[accelerator]}, amount=$amount, " +
+                            "next_op=${nextRInv})"
                 }
-                changeAcceleratorCurrentlyFree(accelerator, nextRInv.amount)
+                changeAcceleratorCurrentlyFree(accelerator, nextRInv.amount * -1)
                 Runner(accelerator, nextRInv, this)
                 nextRInv.amount
             } else {
@@ -66,6 +98,7 @@ class NodeManager {
             }
         }
         // We started something but we didn't use every freed resource
+        // if changed==-1 then we will go into else in the if statement below
         val restFreeAmount = amount - changedAmount
         return if (changedAmount != -1 && restFreeAmount > 0) {
             startNewResources(accelerator, restFreeAmount, true)

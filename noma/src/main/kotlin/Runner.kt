@@ -11,8 +11,7 @@ class Runner(accelerator: String, private val implInv: ImplementationAndInvocati
 
     init {
         GlobalScope.launch {
-            val client = BedrockClient()
-            val consumeHelper = ConsumeHelper()
+            val consumeHelper = BedrockClient() //ConsumeHelper()
             // do the first invocation
             logger.debug { "$pid: Invoking first invocation ${implInv.inv}" }
             invoke(implInv.inv)
@@ -27,7 +26,7 @@ class Runner(accelerator: String, private val implInv: ImplementationAndInvocati
                         //workloads
                         if (allWorkloads.size == 1) 5 else 1
                     )
-                    if (nextInv?.status == 200) {
+                    if (nextInv.status == 200) {
                         logger.debug { "$pid: Calling $nextInv" }
                         invoke(nextInv.inv)
                         successfulRun = true
@@ -38,7 +37,8 @@ class Runner(accelerator: String, private val implInv: ImplementationAndInvocati
 
                 if (!successfulRun) {
                     // try to find a new workload that has this runtime.
-                    val nextInv = consumeHelper.consumeInvocation(implInv.runtime.name, "*", 30)
+                    logger.debug { "$pid: Did not find any invocation, trying 20s for any config..." }
+                    val nextInv = consumeHelper.consumeInvocation(implInv.runtime.name, "*", 20)
                     if (nextInv?.status == 200) {
                         logger.debug { "$pid: Calling $nextInv" }
                         allWorkloads.add(nextInv.inv.configuration)
@@ -47,7 +47,9 @@ class Runner(accelerator: String, private val implInv: ImplementationAndInvocati
                         // There was no new invocation in timeout_s or other mistake
                         logger.info { "$pid: Shutting down because there is no invocation waiting for this runtime" }
                         Processes.stopProcess(pid)
-                        noMa.registerFreedResources(accelerator, implInv.amount)
+                        GlobalScope.launch {
+                            noMa.registerFreedResources(accelerator, implInv.amount)
+                        }
                         break
                     }
                 }
@@ -55,11 +57,12 @@ class Runner(accelerator: String, private val implInv: ImplementationAndInvocati
         }
     }
 
-    suspend fun invoke(inv: Invocation) {
+    suspend fun invoke(inputInv: Invocation) {
         val startComputation = System.currentTimeMillis()
+        val inv = inputInv.copy()
 
         // maybe download the inputconfiguration, but update "configuration" parameter to the file path either way
-        // runtime|configuration
+        // bucket|file
         val split = inv.configuration.split("|")
         val invConfFile = S3Helper.getInputConfiguration(split[0], split[1])
         inv.configuration = invConfFile.absolutePath
@@ -67,7 +70,7 @@ class Runner(accelerator: String, private val implInv: ImplementationAndInvocati
         // maybe download the inputdata, then update the path
         if (inv.params.payload_type == PayloadTypes.REFERENCE) {
             // we need to download it! --> its in the format of a S3File
-            val s3object = inv.params.payload_reference!!
+            val s3object = inv.params.payload_reference
             val file = S3Helper.getInputData(s3object)
             inv.params.payload = file.absolutePath
         }
@@ -75,19 +78,31 @@ class Runner(accelerator: String, private val implInv: ImplementationAndInvocati
         // actual invocation
         val response = Processes.invoke(pid, inv)
 
-        // parse response, maybe upload result
-        val responseParsed = Klaxon().parse<InvocationResult>(response)!!
-        responseParsed.start_computation = startComputation
-        responseParsed.end_computation = System.currentTimeMillis()
-        responseParsed.amount = implInv.amount
-        logger.info { "Process called with $inv, returned $responseParsed" }
+        // Do all results handling stuff in a new coroutine so that this routine can get a new invocation to handle.
+        GlobalScope.launch {
+            // parse response, maybe upload result
+            lateinit var responseParsed: InvocationResult
+            try {
+                responseParsed = Klaxon().parse<InvocationResult>(response)!!
+            } catch (e: Exception) {
+                logger.warn { "Klaxon can't parse: $response" }
+                e.printStackTrace()
+            }
+            responseParsed.start_computation = startComputation
+            responseParsed.end_computation = System.currentTimeMillis()
+            responseParsed.amount = implInv.amount
+            logger.info { "Process called with $inv, returned $responseParsed" }
+            if (responseParsed.result_type == "reference") {
+                logger.info { "Uploading file ${responseParsed.result} to s3://" }
+                val files = S3Helper.uploadFiles(responseParsed.result, inv.params.resultBucket)
+                responseParsed.result = ArrayList(files)
+            }
+            try {
+                ResultsHandler.returnResult(inv, responseParsed)
+            } catch (e: Exception) {
+                logger.warn { "Could not reach results handler" }
+            }
 
-        if (responseParsed.result_type == "reference") {
-            logger.info { "Uploading file ${responseParsed.result} to s3://" }
-            val files = S3Helper.uploadFiles(responseParsed.result, inv.params.resultBucket)
-            responseParsed.result = ArrayList(files)
         }
-
-        ResultsHandler.returnResult(inv, responseParsed)
     }
 }

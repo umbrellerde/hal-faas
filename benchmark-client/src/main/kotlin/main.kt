@@ -4,11 +4,11 @@ import mu.KotlinLogging
 fun main(args: Array<String>) {
     Settings.set(args)
     val logger = KotlinLogging.logger {}
-    val bw = BenchmarkWriter("firstReal")
+    val bw = BenchmarkWriter("full")
     val server = ResultsCollector(bw = bw)
     val bc = BedrockClient()
 
-    val benchmark = BenchmarkDefinition(10_000, 1, 10_000, 10_000, 3)
+    val benchmark = BenchmarkDefinition(30_000, 2, 30_000, 30_000, 5)
     val runner = BenchmarkRunner(bc, bw, benchmark)
     val queueReporter = QueueReporter(BedrockClient(), bw, 1000)
     runBlocking {

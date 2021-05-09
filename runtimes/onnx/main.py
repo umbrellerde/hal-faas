@@ -3,6 +3,7 @@ import os
 import pickle
 import sys
 import time
+import socket
 
 import onnx
 import onnxruntime as rt
@@ -28,10 +29,10 @@ if __name__ == '__main__':
     rt.set_default_logger_severity(4)
     try:
         while True:
-            # input() #
-            params = '{"configuration": "/home/trever/git/hal-faas/s3cache/configs/test/tinyyolov2-7.onnx", ' \
-                     '"params": {' \
-                     '"payload":"/home/trever/git/hal-faas/s3cache/data/test/input_0_tiny.pb"}}'  #
+            params = input()
+            # params = '{"configuration": "/home/trever/git/hal-faas/s3cache/configs/test/tinyyolov2-7.onnx", ' \
+            #          '"params": {' \
+            #          '"payload":"/home/trever/git/hal-faas/s3cache/data/test/input_0_tiny.pb"}}'  #
             request = json.loads(params)
 
             # Load tensor
@@ -44,16 +45,16 @@ if __name__ == '__main__':
             # Run Inference
             start = time.time()
 
-            # providers = [
-            #     ('CUDAExecutionProvider', {
-            #         'device_id': 0,
-            #         'arena_extend_strategy': 'kSameAsRequested',
-            #         'cuda_mem_limit': amount * 1024 * 1024,  # Amount is in MB, parameter expects bytes
-            #         'cudnn_conv_algo_search': 'EXHAUSTIVE',
-            #         'do_copy_in_default_stream': True,
-            #     })
-            # ]
-            providers = ["CUDAExecutionProvider"] # Older versions of onnx apparently cannot be configured!
+            providers = [
+                ('CUDAExecutionProvider', {
+                    'device_id': accelerator,
+                    'arena_extend_strategy': 'kSameAsRequested',
+                    #'cuda_mem_limit': amount * 1024 * 1024,  # Amount is in MB, parameter expects bytes
+                    #'cudnn_conv_algo_search': 'EXHAUSTIVE',
+                    'do_copy_in_default_stream': True,
+                })
+            ]
+            # providers = ["CUDAExecutionProvider"] # Older versions of onnx apparently cannot be configured!
             # Apparently there is no good way to find out how much memory is actually used: https://pytorch.org/docs/stable/notes/faq.html
             # But lets hope this works...
 
@@ -64,7 +65,8 @@ if __name__ == '__main__':
 
             detections = sess.run(output_names, {input_name: image_data})
 
-            duration_ms = (time.time() - start) * 1000
+            end = time.time()
+            duration_ms = (end - start) * 1000
             # Stop the session to hopefully release some memory...
             del sess
 
@@ -80,7 +82,10 @@ if __name__ == '__main__':
 
             # Return Result to Worker Node
             metadata = {
-                'inference_ms': duration_ms
+                'inference_ms': duration_ms,
+                'hostname': socket.gethostname(),
+                'start': start * 1000,
+                'end': end * 1000
             }
             result = {
                 'request': request,

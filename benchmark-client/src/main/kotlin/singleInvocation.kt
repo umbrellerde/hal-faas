@@ -3,10 +3,10 @@ fun main(args: Array<String>) {
     val bc = BedrockClient()
     val inv =
         Invocation(
-            "onnx", "test|yolov4.onnx", InvocationParams(
+            "onnx", "test|tinyyolov2-7.onnx", InvocationParams(
                 PayloadTypes.REFERENCE, S3File(
                     S3Bucket(bucketName = "test"),
-                    "input1.pb"
+                    "input_0_tiny.pb"
                 ), "", S3Bucket(bucketName = "results"),
                 "localhost:9001/" + RandomIDGenerator.next()
             )

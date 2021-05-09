@@ -52,6 +52,9 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
     override suspend fun consumeInvocation(runtime: String, config: String, timeout_s: Int):
             ConsumeInvocation {
         logger.debug { "ConsumeInvocation: $runtime, $config, $timeout_s" }
+        if (config.contains("trever")) {
+            throw java.lang.RuntimeException("WTF where have i forked this up?")
+        }
         val timeoutReachedMs = System.currentTimeMillis() + (timeout_s * 1000)
         val configEncoded = if (config == "*") config else encodeConfig(config)
         val message = "GetJob\nname: $runtime.${encodeConfig(configEncoded)}\nconnection: wait\ntimeout: $timeout_s\n\n"
@@ -59,8 +62,8 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
         do {
             res = runCommand(message)
             // TODO Bedrock doesn't recognize timeout parameter??
-            if (res.status != 200) delay(1100)
-        } while (res.status == 404 && timeoutReachedMs < System.currentTimeMillis())
+            if (res.status != 200) delay(1000)
+        } while (res.status == 404 && timeoutReachedMs > System.currentTimeMillis())
 
         return if (res.status == 200) {
             val rawResponse = Klaxon().parse<BedrockJobResponse>(res.payload)!!
@@ -114,10 +117,11 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
             //List of all workloads that can be run on this runtime with this acceleratorAmount
             logger.debug { "Searching for invocations for runtime $runtimeName" }
             // select name from workload_impl wi left join runtime_impl ri on ri.runtime_impl_id = wi.runtime_impl_id where wi.accelerator_amount < 200;
+            // Just get true if there is any Invocation
             val queryJobs =
-                "Query\nquery: select name from jobs where name like '$runtimeName.%';\nformat: json\n\n"
-            val availJobs = runCommand(queryJobs)
-            if (availJobs.payload.isNotEmpty()) {
+                "Query\nquery: select 1 from jobs where name like '$runtimeName.%' and state='QUEUED';\nformat: json\n\n"
+            val availJobs = runCommandJson(queryJobs)
+            if ((availJobs.response["headers"] as JsonArray<*>).size != 0) {
                 val inv = consumeInvocation(runtime = runtimeName, timeout_s = 5)
                 if (inv.status != 200) {
                     logger.debug { "Invocation $inv is not suitable for starting" }

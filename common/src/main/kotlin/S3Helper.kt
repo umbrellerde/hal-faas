@@ -3,6 +3,8 @@ import io.minio.MinioClient
 import io.minio.UploadObjectArgs
 import mu.KotlinLogging
 import java.io.File
+import java.util.concurrent.locks.Lock
+import java.util.concurrent.locks.ReentrantLock
 
 class S3Helper {
     companion object {
@@ -16,6 +18,8 @@ class S3Helper {
             Settings.s3SecretKey
         ).build()
         private val logger = KotlinLogging.logger {}
+        private val lockedFiles = mutableMapOf<String, Lock>()
+
 
         fun download(
             bucket: String,
@@ -24,13 +28,30 @@ class S3Helper {
             s3Client: MinioClient = Companion.s3Client
         ): File {
             assert(subfolder.isDirectory)
-            logger.debug { "Downloading $bucket / $objectName to $subfolder" }
-            s3Client.downloadObject(
-                DownloadObjectArgs.builder().bucket(bucket).`object`(objectName)
-                    .filename(subfolder.absolutePath + File.separator + objectName)
-                    .build()
-            )
-            logger.debug { "Created File @ ${File(subfolder, objectName).absolutePath}" }
+            val filePath = subfolder.absolutePath + File.separator + objectName
+            val lock = synchronized(lockedFiles) {
+                if (lockedFiles[filePath] == null) {
+                    val lock = ReentrantLock()
+                    lockedFiles[filePath] = lock
+                    lock
+                } else {
+                    lockedFiles[filePath]!!
+                }
+            }
+
+            lock.lock()
+            // If the file does not already exist, download it.
+            if (!File(filePath).exists()) {
+                logger.debug { "Downloading $bucket / $objectName to $subfolder" }
+
+                s3Client.downloadObject(
+                    DownloadObjectArgs.builder().bucket(bucket).`object`(objectName)
+                        .filename(filePath)
+                        .build()
+                )
+                logger.debug { "Created File @ ${File(subfolder, objectName).absolutePath}" }
+            }
+            lock.unlock()
             return File(subfolder, objectName)
         }
 
@@ -42,6 +63,7 @@ class S3Helper {
                 logger.debug { "Input File $bucket / $objectName already exists" }
                 destFile
             } else {
+                logger.debug { "getInputConfig: downloading $objectName" }
                 download(bucket, objectName, bucketFolder)
             }
         }
@@ -58,6 +80,7 @@ class S3Helper {
                     s3obj.bucket.accessKey,
                     s3obj.bucket.secretKey
                 ).build()
+                logger.debug { "getInputData: Downloading file $s3obj" }
                 download(s3obj.bucket.bucketName, s3obj.file, bucketFolder, clientsClient)
             }
         }

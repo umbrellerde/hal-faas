@@ -2,6 +2,7 @@ import com.beust.klaxon.Klaxon
 import kotlinx.coroutines.delay
 import mu.KotlinLogging
 import java.io.File
+import java.lang.RuntimeException
 
 class Processes {
     companion object {
@@ -32,11 +33,11 @@ class Processes {
                 pb.redirectError(ProcessBuilder.Redirect.INHERIT)
                 process = pb.start()
             } catch (e: Exception) {
-                logger.error("Could not start Process! workloadname=workloadName", e)
+                logger.error("Could not start Process! accelerator=$accelerator", e)
             }
             if (process == null) {
                 logger.error { "Process is null!" }
-                throw IllegalArgumentException()
+                throw IllegalArgumentException("Process could not be created")
             }
 
             processes.add(process)
@@ -51,7 +52,7 @@ class Processes {
             process.outputStream.write("$json\n".toByteArray())
             process.outputStream.flush()
             if (process.inputStream == null) {
-                delay(500)
+                throw RuntimeException("Input Stream of process null. process=$process")
             }
             return process.inputStream.bufferedReader().readLine()
         }
