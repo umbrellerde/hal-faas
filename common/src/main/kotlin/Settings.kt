@@ -16,7 +16,7 @@ class Settings {
         val p0duration by parser.option(ArgType.Int, shortName = "p0dur", description = "in milliseconds").default(30000)
         val p1duration by parser.option(ArgType.Int, shortName = "p1dur", description = "in milliseconds").default(90000)
         val p2duration by parser.option(ArgType.Int, shortName = "p2dur", description = "in milliseconds").default(30000)
-
+        val runName by parser.option(ArgType.String, shortName = "name").default("fulltest")
 
         fun set(args: Array<String>) {
             parser.parse(args)

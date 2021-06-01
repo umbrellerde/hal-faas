@@ -6,7 +6,7 @@ fun main(args: Array<String>) {
     val logger = KotlinLogging.logger {}
     //val benchmark = BenchmarkDefinition(30_000, 6, 90_000, 30_000, 20)
     val benchmark = BenchmarkDefinition(30_000, 10, 90_000, 30_000, 40)
-    val bw = BenchmarkWriter("onlyCPU", benchmark)
+    val bw = BenchmarkWriter(Settings.runName, benchmark)
     val server = ResultsCollector(bw = bw)
     val runner = BenchmarkRunner(bw, benchmark)
     val queueReporter = QueueReporter(BedrockClient(), bw, 1000)
