@@ -21,10 +21,13 @@ if __name__ == '__main__':
             result = {
                 'request': request,
                 'accelerator': accelerator,
-                'amount': amount,
-                'pid': os.getppid()
+                # 'amount': int(amount),
+                'pid': str(os.getppid()),
+                'result_type': 'value',  # 'reference' or 'value'
+                'result': [100],
+                'metadata': {'idk': 'what'}
             }
-            time.sleep(2)
+            time.sleep(0.01)
             print(json.dumps(result), flush=True)
     except:
         exit(1)

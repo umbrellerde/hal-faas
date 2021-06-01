@@ -273,13 +273,19 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
         logger.info { "Insert helloWorld runtime: $res" }
         res = runCommand(
             "Query: Insert into runtime_impl (accelerator_type, accelerator_amount, location, runtime_id) values " +
-                    "('gpu', 200, " +
+                    "('cpu', 1, " +
                     "'helloWorld', 1);\n\n"
         )
         logger.info { "Insert helloWorld runtime_impl: $res" }
 
         res = runCommand("Query: Insert into runtime (name) values ('onnx');\n\n")
         logger.info { "Insert onnx runtime: $res" }
+        res = runCommand(
+            "Query: Insert into runtime_impl (accelerator_type, accelerator_amount, location, runtime_id) values " +
+                    "('myriad', 1, " +
+                    "'onnx-stick', 2);\n\n"
+        )
+        logger.info { "Insert onnx runtime_impl: $res" }
         res = runCommand(
             "Query: Insert into runtime_impl (accelerator_type, accelerator_amount, location, runtime_id) values " +
                     "('gpu', 450, " +

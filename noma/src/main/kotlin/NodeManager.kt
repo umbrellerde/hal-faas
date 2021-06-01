@@ -13,11 +13,13 @@ class NodeManager {
         if (System.getProperty("user.name").equals("trever")) {
             mapOf(
                 "0" to "gpu",
+                "mycpu" to "cpu"
             )
         } else {
             mapOf(
                 "0" to "gpu",
-                "1" to "gpu"
+                "1" to "gpu",
+                "stick1" to "myriad",
             )
         }
 
@@ -25,11 +27,13 @@ class NodeManager {
         if (System.getProperty("user.name").equals("trever")) {
             mutableMapOf(
                 "0" to 2000,
+                "mycpu" to 100
             )
         } else {
             mutableMapOf(
                 "0" to 1500,
-                "1" to 1500
+                "1" to 1500,
+                "stick1" to 1,
             )
         }
     private var job = GlobalScope.launch {

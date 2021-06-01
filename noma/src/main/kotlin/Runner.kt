@@ -11,6 +11,7 @@ class Runner(accelerator: String, private val implInv: ImplementationAndInvocati
 
     init {
         GlobalScope.launch {
+            S3Helper.getRuntime(implInv.runtime.location)
             val consumeHelper = BedrockClient() //ConsumeHelper()
             // do the first invocation
             logger.debug { "$pid: Invoking first invocation ${implInv.inv}" }

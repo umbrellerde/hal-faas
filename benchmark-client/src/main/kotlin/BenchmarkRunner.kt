@@ -1,26 +1,25 @@
-import com.beust.klaxon.Klaxon
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
+import kotlin.math.round
 
 data class BenchmarkDefinition(
-    val p0Duration: Long = 60_000, val p0Trps: Int = 0,
-    val p1Duration: Long = 60_000,
-    val p2Duration: Long = 180_000, val p2Trps: Int = 15
+    val p0Duration: Int = Settings.p0duration, val p0Trps: Int = Settings.p0trps,
+    val p1Duration: Int = Settings.p1duration,
+    val p2Duration: Int = Settings.p2duration, val p2Trps: Int = Settings.p2trps
 )
 
 class BenchmarkRunner(
-    val bc: BedrockClient,
     val bw: BenchmarkWriter,
     val bench: BenchmarkDefinition,
-    val runtime: String = "onnx",
+    val runtime: String = "helloWorld",//"onnx",
     val workload: String = "test|tinyyolov2-7.onnx",
     val payload: S3File = S3File(
         S3Bucket(bucketName = "test"),
         "input_0_tiny.pb"
     ),
-    val callbackBase: String = "localhost:3358",
+    val callbackBase: String = Settings.callbackBaseUrl,
 ) {
     private val logger = KotlinLogging.logger {}
     private fun createInvocation(bc: BedrockClient) {
@@ -35,25 +34,31 @@ class BenchmarkRunner(
         bc.createInvocation(inv)
     }
 
+    private val clientList = ArrayList<BedrockClient>()
+    private fun getClientNumber(i: Int):BedrockClient {
+        while (i > (clientList.size - 1)) {
+            clientList.add(BedrockClient())
+        }
+        return clientList[i]
+    }
+
     private fun launchConcurrent(trps: Int, step: String): Long {
         val thisRoundStart = System.currentTimeMillis()
         repeat(trps) {
             GlobalScope.launch {
                 // TODO maybe this is not fast enough wen aiming for higher TPS? This creates $tps Instances of
                 // TODO BedrockClient every second
-                val bc = BedrockClient()
+                val bc = getClientNumber(it)
                 createInvocation(bc)
-                bc.close()
+                delay(100)
             }
         }
-        val thisRoundEnd = System.currentTimeMillis()
-        val thisRoundTime = thisRoundEnd - thisRoundStart
-        val timeToSleep = 1000 - thisRoundTime
+        val nextRound = 1000 + thisRoundStart
+        val timeToSleep = nextRound - System.currentTimeMillis()
         if (timeToSleep < 0) {
             logger.error {
                 "Warning: $step Could not keep up with starting Coroutines for test! " +
-                        "trps=$trps, start=$thisRoundStart, " +
-                        "end=$thisRoundEnd, time=$thisRoundTime"
+                        "trps=$trps, start=$thisRoundStart"
             }
             return 0
         }
@@ -73,22 +78,22 @@ class BenchmarkRunner(
         //  Normalize the difference in tprs to 0..100 so that the formula
         // p0Trps + (trpsDiffNorm * percentDone)
         // gives the trps for any second
-        val trpsDiffNorm = (bench.p2Trps - bench.p0Trps) / 100
-        while (true) {
-            val currentTime = System.currentTimeMillis()
-            if (currentTime >= endP1) break
-            val percentDone = bench.p1Duration / (currentTime - endP1)
-            val trps = bench.p0Trps + percentDone * trpsDiffNorm
-            val timeToSleep = launchConcurrent(bench.p0Trps, "P1")
+        val trpsDiffNorm = (bench.p2Trps * 1.0 - bench.p0Trps) / 100
+        while (System.currentTimeMillis() < endP1) {
+            val percentDone = 1 - ((endP1 - System.currentTimeMillis()) / (bench.p1Duration * 1.0))
+            val trps = round(bench.p0Trps + (percentDone * 100) * trpsDiffNorm)
+            logger.debug { "TRPS: $trps" }
+            val timeToSleep = launchConcurrent(trps.toInt(), "P1")
             delay(timeToSleep)
         }
     }
 
     suspend fun doP2(startP2: Long = System.currentTimeMillis()) {
-        val endP0 = startP2 + bench.p2Duration
-        while (System.currentTimeMillis() < endP0) {
+        val endP2 = startP2 + bench.p2Duration
+        while (System.currentTimeMillis() < endP2) {
             val timeToSleep = launchConcurrent(bench.p2Trps, "P2")
             delay(timeToSleep)
         }
+        clientList.forEach { it.close() }
     }
 }

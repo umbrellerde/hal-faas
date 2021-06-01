@@ -1,10 +1,11 @@
-import io.minio.DownloadObjectArgs
-import io.minio.MinioClient
-import io.minio.UploadObjectArgs
+import io.minio.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import java.io.File
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
+import java.util.zip.ZipFile
 
 class S3Helper {
     companion object {
@@ -12,13 +13,15 @@ class S3Helper {
         private val folder = File("s3cache/").apply { mkdirs() }
         private val configFolder = File(folder, "configs/").apply { mkdirs() }
         private val dataFolder = File(folder, "data/").apply { mkdirs() }
+        private val runtimeFolder = File("runtimes/").apply { mkdirs() }
+        private val runtimeZipFolder = File("runtimes-zip/").apply { mkdirs() }
 
         private val s3Client = MinioClient.builder().endpoint(Settings.s3Endpoint).credentials(
             Settings.s3AccessKey,
             Settings.s3SecretKey
         ).build()
         private val logger = KotlinLogging.logger {}
-        private val lockedFiles = mutableMapOf<String, Lock>()
+        private val lockedFiles = mutableMapOf<String, ReentrantLock>()
 
 
         fun download(
@@ -52,6 +55,17 @@ class S3Helper {
                 logger.debug { "Created File @ ${File(subfolder, objectName).absolutePath}" }
             }
             lock.unlock()
+
+            // If there is no routine waiting for this lock delete it.
+            // This should save some heap memory
+            GlobalScope.launch {
+                synchronized(lockedFiles) {
+                    if (lockedFiles[filePath]!!.holdCount == 0) {
+                        lockedFiles.remove(filePath)
+                    }
+                }
+            }
+
             return File(subfolder, objectName)
         }
 
@@ -86,6 +100,33 @@ class S3Helper {
         }
 
         /**
+         * checks if the runtime is already downloaded and downloads it if necessary
+         */
+        fun getRuntime(runtimeName: String) {
+            val alreadyThere = File(runtimeFolder, "$runtimeName/").exists()
+
+            if (!alreadyThere) {
+                logger.debug { "getRuntime: downloading Runtime $runtimeName" }
+                val zipFile = download("runtimes", "$runtimeName.zip", runtimeZipFolder)
+                val extractedFolder = File(runtimeFolder, "$runtimeName/").apply { mkdirs() }
+                // https://stackoverflow.com/questions/46627357/unzip-a-file-in-kotlin-script-kts
+                // modified to use the right folder and maybe create directories
+                ZipFile(zipFile).use { zip ->
+                    zip.entries().asSequence().forEach { entry ->
+                        zip.getInputStream(entry).use { input ->
+                            File(extractedFolder, entry.name).outputStream().use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                    }
+                }
+                val startupSh = File(extractedFolder, "startup.sh").apply { setExecutable(true) }
+            } else {
+                logger.debug { "getRuntime: Runtime $runtimeName already downloaded" }
+            }
+        }
+
+        /**
          * upload the list of files to the bucket
          */
         fun uploadFiles(filepath: List<String>, bucket: S3Bucket): List<String> {
@@ -93,6 +134,9 @@ class S3Helper {
                 bucket.accessKey,
                 bucket.secretKey
             ).build()
+            if (!clientsClient.bucketExists(BucketExistsArgs.builder().bucket(bucket.bucketName).build())) {
+                clientsClient.makeBucket(MakeBucketArgs.builder().bucket(bucket.bucketName).build())
+            }
             for (file in filepath) {
                 clientsClient.uploadObject(
                     UploadObjectArgs.builder()

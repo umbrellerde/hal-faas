@@ -7,8 +7,9 @@ import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
-
-class BenchmarkWriter(private val runName: String, private val folder: String = "results") {
+// TODO write nvidia-smi --query-gpu=gpu_bus_id,utilization.gpu,utilization.memory --format=csv,noheader,nounits
+class BenchmarkWriter(private val runName: String, private val benchmark: BenchmarkDefinition, private val folder:
+String = "results") {
     private val logger = KotlinLogging.logger {}
 
     data class BenchmarkedInvocation(
@@ -65,7 +66,9 @@ class BenchmarkWriter(private val runName: String, private val folder: String = 
         val isoTime = df.format(Date())
 
         // Write Invocation Results
-        val pathName = "$folder/${isoTime}_inv_${runName}.json"
+        val trpsInfo = "${benchmark.p0Duration}_${benchmark.p0Trps}_${benchmark.p1Duration}_${benchmark
+            .p2Duration}_${benchmark.p2Trps}"
+        val pathName = "$folder/${isoTime}_inv_${runName}_$trpsInfo.json"
         val targetFile = File(pathName)
         targetFile.parentFile.mkdirs()
         val writer = targetFile.bufferedWriter()
