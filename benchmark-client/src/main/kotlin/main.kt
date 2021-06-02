@@ -5,7 +5,7 @@ fun main(args: Array<String>) {
     Settings.set(args)
     val logger = KotlinLogging.logger {}
     //val benchmark = BenchmarkDefinition(30_000, 6, 90_000, 30_000, 20)
-    val benchmark = BenchmarkDefinition(30_000, 10, 90_000, 30_000, 40)
+    val benchmark = BenchmarkDefinition()
     val bw = BenchmarkWriter(Settings.runName, benchmark)
     val server = ResultsCollector(bw = bw)
     val runner = BenchmarkRunner(bw, benchmark)

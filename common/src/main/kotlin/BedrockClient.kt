@@ -57,12 +57,16 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
         }
         val timeoutReachedMs = System.currentTimeMillis() + (timeout_s * 1000)
         val configEncoded = if (config == "*") config else encodeConfig(config)
-        val message = "GetJob\nname: $runtime.${encodeConfig(configEncoded)}\nconnection: wait\ntimeout: $timeout_s\n\n"
+        val message = "GetJob\nname: $runtime.${encodeConfig(configEncoded)}\nconnection: wait\ntimeout: " +
+                "${timeout_s*1000}\n\n"
         var res: ParsedResponse
         do {
             res = runCommand(message)
             // TODO Bedrock doesn't recognize timeout parameter??
-            if (res.status != 200) delay(1000)
+            if (res.status != 200){
+                logger.debug { "ConsumeInvocation: Got Response $res" }
+                delay(1000)
+            }
         } while (res.status == 404 && timeoutReachedMs > System.currentTimeMillis())
 
         return if (res.status == 200) {

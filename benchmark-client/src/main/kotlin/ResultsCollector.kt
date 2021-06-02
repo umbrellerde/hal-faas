@@ -6,7 +6,7 @@ import mu.KotlinLogging
 import java.net.InetSocketAddress
 
 class ResultsCollector(
-    private val hostname: String = "localhost",
+    private val hostname: String = Settings.callbackServerHost,
     private val port: Int = 3358,
     private val bw: BenchmarkWriter
 ) {

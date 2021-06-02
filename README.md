@@ -27,3 +27,7 @@ Masters Thesis
     --p2duration, -p2dur [30000] -> in milliseconds { Int }
     --runName, -name [fulltest] { String }
 ```
+
+
+java -jar noma-1.0-SNAPSHOT-jar-with-dependencies.jar -bedrockHost 130.149.158.80
+java -jar benchmark-client-1.0-SNAPSHOT-jar-with-dependencies.jar -bedrockHost 130.149.158.80

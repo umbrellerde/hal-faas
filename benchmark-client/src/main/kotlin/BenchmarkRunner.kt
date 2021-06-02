@@ -13,7 +13,7 @@ data class BenchmarkDefinition(
 class BenchmarkRunner(
     val bw: BenchmarkWriter,
     val bench: BenchmarkDefinition,
-    val runtime: String = "helloWorld",//"onnx",
+    val runtime: String = "onnx",
     val workload: String = "test|tinyyolov2-7.onnx",
     val payload: S3File = S3File(
         S3Bucket(bucketName = "test"),

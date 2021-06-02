@@ -8,34 +8,47 @@ class NodeManager {
     private val bc = BedrockClient()
     private val logger = KotlinLogging.logger {}
 
-    // TODO maybe read this from a config file with acceleratorName, Type, Amount...
-    private val acceleratorTypes =
-        if (System.getProperty("user.name").equals("trever")) {
-            mapOf(
-                "0" to "gpu",
-                "mycpu" to "cpu"
-            )
-        } else {
-            mapOf(
-                "0" to "gpu",
-                "1" to "gpu",
-                "stick1" to "myriad",
-            )
-        }
+    private val acceleratorTypes = mutableMapOf<String, String>()
+//        if (System.getProperty("user.name").equals("trever")) {
+//            mapOf(
+//                "0" to "gpu",
+//                "mycpu" to "cpu"
+//            )
+//        } else {
+//            mapOf(
+////                "0" to "gpu"
+//                "0" to "gpu",
+//                "1" to "gpu",
+////                "stick1" to "myriad",
+//            )
+//        }
 
-    private val acceleratorCurrentlyFree =
-        if (System.getProperty("user.name").equals("trever")) {
-            mutableMapOf(
-                "0" to 2000,
-                "mycpu" to 100
-            )
-        } else {
-            mutableMapOf(
-                "0" to 1500,
-                "1" to 1500,
-                "stick1" to 1,
-            )
+    private val acceleratorCurrentlyFree = mutableMapOf<String, Int>()
+
+    init {
+        for (acc: String in Settings.resources.split(";")) {
+            val items = acc.split(",")
+            // name, type, amount
+            acceleratorTypes[items[0]] = items[1]
+            acceleratorCurrentlyFree[items[0]] = items[2].toInt()
         }
+    }
+
+//        if (System.getProperty("user.name").equals("trever")) {
+//            mutableMapOf(
+//                "0" to 2000,
+//                "mycpu" to 100
+//            )
+//        } else {
+//            mutableMapOf(
+////                "0" to 2600
+//                "0" to 3000,
+//                "1" to 3000,
+////                "0" to 1500,
+////                "1" to 1500,
+////                "stick1" to 1,
+//            )
+//        }
     private var job = GlobalScope.launch {
         var firstResourcesStarted = false
         while (isActive) {

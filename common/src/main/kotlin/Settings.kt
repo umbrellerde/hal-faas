@@ -11,12 +11,15 @@ class Settings {
         val s3SecretKey by parser.option(ArgType.String, shortName = "s3secret").default("minio-admin")
         val s3Endpoint by parser.option(ArgType.String, shortName = "s3host").default("http://localhost:9000")
         val callbackBaseUrl by parser.option(ArgType.String, shortName = "callbackBase", description = "Address/Port that will be prepended to the callback url, without a /").default("localhost:3358")
-        val p0trps by parser.option(ArgType.Int, shortName = "p0trps").default(6)
-        val p2trps by parser.option(ArgType.Int, shortName = "p2trps").default(20)
+        val callbackServerHost by parser.option(ArgType.String, shortName = "callbackHost", description = "Host of " +
+                "the server").default("localhost")
+        val p0trps by parser.option(ArgType.Int, shortName = "p0trps").default(20)
+        val p2trps by parser.option(ArgType.Int, shortName = "p2trps").default(100)
         val p0duration by parser.option(ArgType.Int, shortName = "p0dur", description = "in milliseconds").default(30000)
         val p1duration by parser.option(ArgType.Int, shortName = "p1dur", description = "in milliseconds").default(90000)
         val p2duration by parser.option(ArgType.Int, shortName = "p2dur", description = "in milliseconds").default(30000)
-        val runName by parser.option(ArgType.String, shortName = "name").default("fulltest")
+        val runName by parser.option(ArgType.String, shortName = "name").default("cputest")
+        val resources by parser.option(ArgType.String, shortName = "res").default("0,gpu,2000;mycpu,cpu,200")
 
         fun set(args: Array<String>) {
             parser.parse(args)
