@@ -3,6 +3,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import kotlin.math.round
+import kotlin.system.exitProcess
 
 data class BenchmarkDefinition(
     val p0Duration: Int = Settings.p0duration, val p0Trps: Int = Settings.p0trps,
@@ -13,22 +14,31 @@ data class BenchmarkDefinition(
 class BenchmarkRunner(
     val bw: BenchmarkWriter,
     val bench: BenchmarkDefinition,
-    val runtime: String = "onnx",
+    val runtime: String = "helloWorld",//"onnx",
     val workload: String = "test|tinyyolov2-7.onnx",
-    val payload: S3File = S3File(
+    val payloadReference: S3File = S3File(
         S3Bucket(bucketName = "test"),
         "input_0_tiny.pb"
     ),
     val callbackBase: String = Settings.callbackBaseUrl,
+    val payload: String = ""
 ) {
     private val logger = KotlinLogging.logger {}
     private fun createInvocation(bc: BedrockClient) {
+        val params = if (payload != "") {
+            InvocationParams(
+                PayloadTypes.VALUE, S3File.empty(), payload, S3Bucket(bucketName = "results"),
+                callbackBase + "/" + RandomIDGenerator.next()
+            )
+        } else {
+            InvocationParams(
+                PayloadTypes.REFERENCE, payloadReference, "", S3Bucket(bucketName = "results"),
+                callbackBase + "/" + RandomIDGenerator.next()
+            )
+        }
         val inv =
             Invocation(
-                runtime, workload, InvocationParams(
-                    PayloadTypes.REFERENCE, payload, "", S3Bucket(bucketName = "results"),
-                    callbackBase + "/" + RandomIDGenerator.next()
-                )
+                runtime, workload, params
             )
         bw.collectStart(inv)
         bc.createInvocation(inv)
@@ -60,7 +70,7 @@ class BenchmarkRunner(
                 "Warning: $step Could not keep up with starting Coroutines for test! " +
                         "trps=$trps, start=$thisRoundStart"
             }
-            return 0
+            exitProcess(1)
         }
         return timeToSleep
     }

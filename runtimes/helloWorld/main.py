@@ -3,7 +3,7 @@ import os
 
 import sys
 import time
-
+import socket
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, flush=True, **kwargs)
@@ -18,6 +18,12 @@ if __name__ == '__main__':
             # eprint("Got Input: ")
             # eprint(params)
             request = json.loads(params)
+            start = time.time()
+            if 'sleep' in request['params']:
+                time.sleep(request['params']['sleep'])
+            else:
+                time.sleep(0.5)
+            end = time.time()
             result = {
                 'request': request,
                 'accelerator': accelerator,
@@ -25,7 +31,12 @@ if __name__ == '__main__':
                 'pid': str(os.getppid()),
                 'result_type': 'value',  # 'reference' or 'value'
                 'result': [100],
-                'metadata': {'idk': 'what'}
+                'metadata': {
+                    'start': start * 1000,
+                    'end': end * 1000,
+                    'inference_ms': (end - start) * 1000,
+                    'hostname': socket.gethostname()
+                }
             }
             time.sleep(0.01)
             print(json.dumps(result), flush=True)

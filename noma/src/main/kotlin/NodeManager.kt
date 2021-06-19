@@ -9,6 +9,7 @@ class NodeManager {
     private val logger = KotlinLogging.logger {}
 
     private val acceleratorTypes = mutableMapOf<String, String>()
+    private val acceleratorCurrentlyFree = mutableMapOf<String, Int>()
 //        if (System.getProperty("user.name").equals("trever")) {
 //            mapOf(
 //                "0" to "gpu",
@@ -22,8 +23,6 @@ class NodeManager {
 ////                "stick1" to "myriad",
 //            )
 //        }
-
-    private val acceleratorCurrentlyFree = mutableMapOf<String, Int>()
 
     init {
         for (acc: String in Settings.resources.split(";")) {

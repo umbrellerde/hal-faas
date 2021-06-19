@@ -7,6 +7,7 @@ import java.net.Socket
 import java.nio.charset.Charset
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.system.exitProcess
 
 /**
  * Implementation according to https://bedrockdb.com/jobs.html
@@ -53,7 +54,8 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
             ConsumeInvocation {
         logger.debug { "ConsumeInvocation: $runtime, $config, $timeout_s" }
         if (config.contains("trever")) {
-            throw java.lang.RuntimeException("WTF where have i forked this up?")
+            exitProcess(1)
+            //throw java.lang.RuntimeException("WTF where have i forked this up?")
         }
         val timeoutReachedMs = System.currentTimeMillis() + (timeout_s * 1000)
         val configEncoded = if (config == "*") config else encodeConfig(config)
