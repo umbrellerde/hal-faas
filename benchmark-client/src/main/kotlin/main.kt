@@ -17,13 +17,15 @@ fun main(args: Array<String>) {
     if (Settings.runBothDirs) {
         // Switch Benchmarks around
         val otherBenchmark = BenchmarkDefinition(p0Trps = Settings.p2trps, p2Trps = Settings.p0trps)
-        val otherRunner = BenchmarkRunner(bw,
+        val otherRunner = BenchmarkRunner(
+            bw,
             otherBenchmark,
-            runtime = "helloWorld",
-            payloadReference = S3File(
-                S3Bucket(bucketName = "test"),
-                "input_0_tiny.pb"
-            ))
+            workload = "test|othertinyyolov2-7.onnx"
+//            payloadReference = S3File(
+//                S3Bucket(bucketName = "test"),
+//                "input_0_tiny.pb"
+//            )
+        )
 
         GlobalScope.launch {
             logger.info { "Starting Other P0..." }

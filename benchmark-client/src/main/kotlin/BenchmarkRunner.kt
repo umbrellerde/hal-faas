@@ -2,6 +2,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
+import kotlin.math.abs
 import kotlin.math.round
 import kotlin.system.exitProcess
 
@@ -54,16 +55,14 @@ class BenchmarkRunner(
 
     private fun launchConcurrent(trps: Int, step: String): Long {
         val thisRoundStart = System.currentTimeMillis()
-        repeat(trps) {
+        repeat(trps * 10) {
             GlobalScope.launch {
-                // TODO maybe this is not fast enough wen aiming for higher TPS? This creates $tps Instances of
-                // TODO BedrockClient every second
                 val bc = getClientNumber(it)
                 createInvocation(bc)
-                delay(100)
             }
         }
-        val nextRound = 1000 + thisRoundStart
+        logger.info { "Step: $step, Trps: $trps" }
+        val nextRound = 10_000 + thisRoundStart
         val timeToSleep = nextRound - System.currentTimeMillis()
         if (timeToSleep < 0) {
             logger.error {

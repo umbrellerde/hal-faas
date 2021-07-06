@@ -3,7 +3,7 @@ class RandomIDGenerator {
         private var chars = ('a'..'z') + ('A'..'Z') + ('0'..'9')
         fun next(): String {
             val sb = StringBuilder()
-            repeat(10) {
+            repeat(20) {
                 sb.append(chars.random())
             }
             return sb.toString()

@@ -66,7 +66,7 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
             res = runCommand(message)
             // TODO Bedrock doesn't recognize timeout parameter??
             if (res.status != 200){
-                logger.debug { "ConsumeInvocation: Got Response $res" }
+                //logger.debug { "ConsumeInvocation: Got Response $res" }
                 delay(1000)
             }
         } while (res.status == 404 && timeoutReachedMs > System.currentTimeMillis())

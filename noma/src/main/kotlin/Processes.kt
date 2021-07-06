@@ -1,5 +1,7 @@
 import com.beust.klaxon.Klaxon
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import mu.KotlinLogging
 import java.io.File
 import java.lang.RuntimeException
@@ -46,11 +48,18 @@ class Processes {
         }
 
         suspend fun invoke(name: String, inv: Invocation): String {
-            logger.info { "Invoke was called on $name with params: $inv" }
+            logger.info { "Invoke was called on $name with config ${inv.configuration}" }
             val process = processes.find { it.pid().toString() == name }!!
             val json = Klaxon().toJsonString(inv).replace("\n", "")
-            process.outputStream.write("$json\n".toByteArray())
-            process.outputStream.flush()
+//            process.outputStream.use {
+//                it.write("$json\n".toByteArray())
+//                it.flush()
+//            }
+            withContext(Dispatchers.IO) {
+                process.outputStream.write("$json\n".toByteArray())
+                process.outputStream.flush()
+            }
+
             if (process.inputStream == null) {
                 throw RuntimeException("Input Stream of process null. process=$process")
             }

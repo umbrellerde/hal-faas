@@ -7,7 +7,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 class Runner(accelerator: String, private val implInv: ImplementationAndInvocation, noMa: NodeManager) {
     private val logger = KotlinLogging.logger {}
-    val pid = Processes.startProcess(implInv.runtime, accelerator, implInv.amount.toString())
+    private val pid = Processes.startProcess(implInv.runtime, accelerator, implInv.amount.toString())
 
     init {
         GlobalScope.launch {
@@ -25,10 +25,10 @@ class Runner(accelerator: String, private val implInv: ImplementationAndInvocati
                         implInv.runtime.name, implInv.inv.configuration,
                         // Wait 5s if this is only running 1 workload, otherwise wait shorter to ask for other
                         //workloads
-                        if (allWorkloads.size == 1) 5 else 1
+                        timeout_s = if (allWorkloads.size == 1) 8 else 2
                     )
                     if (nextInv.status == 200) {
-                        logger.debug { "$pid: Calling $nextInv" }
+                        logger.info { "$pid: Calling $nextInv" }
                         invoke(nextInv.inv)
                         successfulRun = true
                         // restart
@@ -38,11 +38,11 @@ class Runner(accelerator: String, private val implInv: ImplementationAndInvocati
 
                 if (!successfulRun) {
                     // try to find a new workload that has this runtime.
-                    logger.debug { "$pid: Did not find any invocation, trying 20s for any config..." }
-                    val nextInv = consumeHelper.consumeInvocation(implInv.runtime.name, "*", 20)
-                    if (nextInv?.status == 200) {
+                    logger.info { "$pid: Did not find any invocation, trying 20s for any config..." }
+                    val nextInv = consumeHelper.consumeInvocation(implInv.runtime.name, "*", 12)
+                    if (nextInv.status == 200) {
                         logger.debug { "$pid: Calling $nextInv" }
-                        allWorkloads.add(nextInv.inv.configuration)
+                        allWorkloads.add(0, nextInv.inv.configuration)
                         invoke(nextInv.inv)
                     } else {
                         // There was no new invocation in timeout_s or other mistake
