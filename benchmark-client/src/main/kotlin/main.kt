@@ -20,7 +20,8 @@ fun main(args: Array<String>) {
         val otherRunner = BenchmarkRunner(
             bw,
             otherBenchmark,
-            workload = "test|othertinyyolov2-7.onnx"
+            runtime = "onnx2",
+            workload = "test|tinyyolov2-7.onnx"
 //            payloadReference = S3File(
 //                S3Bucket(bucketName = "test"),
 //                "input_0_tiny.pb"

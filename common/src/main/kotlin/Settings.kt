@@ -13,8 +13,8 @@ class Settings {
         val callbackBaseUrl by parser.option(ArgType.String, shortName = "callbackBase", description = "Address/Port that will be prepended to the callback url, without a /").default("localhost:3358")
         val callbackServerHost by parser.option(ArgType.String, shortName = "callbackHost", description = "Host of " +
                 "the server").default("localhost")
-        val p0trps by parser.option(ArgType.Int, shortName = "p0trps").default(10)
-        val p2trps by parser.option(ArgType.Int, shortName = "p2trps").default(20)
+        val p0trps by parser.option(ArgType.Double, shortName = "p0trps").default(10.0)
+        val p2trps by parser.option(ArgType.Double, shortName = "p2trps").default(20.0)
         val p0duration by parser.option(ArgType.Int, shortName = "p0dur", description = "in milliseconds").default(30000)
         val p1duration by parser.option(ArgType.Int, shortName = "p1dur", description = "in milliseconds").default(90000)
         val p2duration by parser.option(ArgType.Int, shortName = "p2dur", description = "in milliseconds").default(30000)

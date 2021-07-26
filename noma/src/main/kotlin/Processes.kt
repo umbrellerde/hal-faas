@@ -15,12 +15,14 @@ class Processes {
         init {
             Runtime.getRuntime().addShutdownHook(
                 Thread {
-                    if (processes.isNotEmpty()) {
-                        logger.warn { processes.joinToString (", ", prefix = "Currently running:") }
-                    }
-                    processes.forEach {
-                        logger.debug { "Shutting down process ${it.pid()}" }
-                        it.destroy()
+                    synchronized(processes) {
+                        if (processes.isNotEmpty()) {
+                            logger.warn { processes.joinToString (", ", prefix = "Currently running:") }
+                        }
+                        processes.forEach {
+                            logger.debug { "Shutting down process ${it.pid()}" }
+                            it.destroy()
+                        }
                     }
                 }
             )
@@ -42,14 +44,18 @@ class Processes {
                 throw IllegalArgumentException("Process could not be created")
             }
 
-            processes.add(process)
-            logger.info { "Created process ${process.pid()}" }
+            synchronized(processes) {
+                processes.add(process)
+                logger.info { "Created process ${process.pid()}" }
+            }
             return process.pid().toString()
         }
 
         suspend fun invoke(name: String, inv: Invocation): String {
             logger.info { "Invoke was called on $name with config ${inv.configuration}" }
-            val process = processes.find { it.pid().toString() == name }!!
+            val process = synchronized(processes) {
+                processes.find { it.pid().toString() == name }!!
+            }
             val json = Klaxon().toJsonString(inv).replace("\n", "")
 //            process.outputStream.use {
 //                it.write("$json\n".toByteArray())
@@ -68,9 +74,11 @@ class Processes {
 
         fun stopProcess(name: String) {
             logger.info { "Stop was called with $name" }
-            val process = processes.find { it.pid().toString() == name }!!
-            processes.remove(process)
-            process.destroy()
+            synchronized(processes) {
+                val process = processes.find { it.pid().toString() == name }!!
+                processes.remove(process)
+                process.destroy()
+            }
         }
     }
 }

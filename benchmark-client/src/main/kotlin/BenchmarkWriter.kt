@@ -32,7 +32,9 @@ String = "results") {
     }
 
     fun collectEnd(callback: String, result: InvocationResult, end: Long = System.currentTimeMillis()) {
-        val inv = allInvocations.find { it.inv.params.callbackUrl.endsWith(callback) }
+        val inv = synchronized(allInvocations) {
+            allInvocations.find { it.inv.params.callbackUrl.endsWith(callback) }
+        }
         if (inv == null) {
             logger.error { "Could not get Invocation for callback $callback (result=$result)" }
             val filtered = allInvocations.filter { it.inv.params.callbackUrl.endsWith(callback) }

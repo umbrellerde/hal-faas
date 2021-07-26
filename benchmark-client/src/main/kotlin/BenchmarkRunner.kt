@@ -7,9 +7,9 @@ import kotlin.math.round
 import kotlin.system.exitProcess
 
 data class BenchmarkDefinition(
-    val p0Duration: Int = Settings.p0duration, val p0Trps: Int = Settings.p0trps,
+    val p0Duration: Int = Settings.p0duration, val p0Trps: Double = Settings.p0trps,
     val p1Duration: Int = Settings.p1duration,
-    val p2Duration: Int = Settings.p2duration, val p2Trps: Int = Settings.p2trps
+    val p2Duration: Int = Settings.p2duration, val p2Trps: Double = Settings.p2trps
 )
 
 class BenchmarkRunner(
@@ -53,9 +53,9 @@ class BenchmarkRunner(
         return clientList[i]
     }
 
-    private fun launchConcurrent(trps: Int, step: String): Long {
+    private fun launchConcurrent(trps: Double, step: String): Long {
         val thisRoundStart = System.currentTimeMillis()
-        repeat(trps * 10) {
+        repeat(round(trps * 10).toInt()) {
             GlobalScope.launch {
                 val bc = getClientNumber(it)
                 createInvocation(bc)
@@ -77,7 +77,7 @@ class BenchmarkRunner(
     suspend fun doP0(startP0: Long = System.currentTimeMillis()) {
         val endP0 = startP0 + bench.p0Duration
         while (System.currentTimeMillis() < endP0) {
-            val timeToSleep = launchConcurrent(bench.p0Trps, "P0")
+            val timeToSleep = launchConcurrent(bench.p0Trps.toDouble(), "P0")
             delay(timeToSleep)
         }
     }
@@ -90,9 +90,9 @@ class BenchmarkRunner(
         val trpsDiffNorm = (bench.p2Trps * 1.0 - bench.p0Trps) / 100
         while (System.currentTimeMillis() < endP1) {
             val percentDone = 1 - ((endP1 - System.currentTimeMillis()) / (bench.p1Duration * 1.0))
-            val trps = round(bench.p0Trps + (percentDone * 100) * trpsDiffNorm)
+            val trps =bench.p0Trps + (percentDone * 100) * trpsDiffNorm
             logger.debug { "TRPS: $trps" }
-            val timeToSleep = launchConcurrent(trps.toInt(), "P1")
+            val timeToSleep = launchConcurrent(trps, "P1")
             delay(timeToSleep)
         }
     }
@@ -100,7 +100,7 @@ class BenchmarkRunner(
     suspend fun doP2(startP2: Long = System.currentTimeMillis()) {
         val endP2 = startP2 + bench.p2Duration
         while (System.currentTimeMillis() < endP2) {
-            val timeToSleep = launchConcurrent(bench.p2Trps, "P2")
+            val timeToSleep = launchConcurrent(bench.p2Trps.toDouble(), "P2")
             delay(timeToSleep)
         }
         clientList.forEach { it.close() }

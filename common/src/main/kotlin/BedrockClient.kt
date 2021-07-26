@@ -115,7 +115,7 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
                     "left join runtime_impl ri on r.runtime_id = ri.runtime_id " +
                     "where ri.accelerator_type ='$acceleratorType' and ri.accelerator_amount <= $acceleratorAmount;\nformat: json\n\n"
         val jsonResponse = runCommandJson(queryRuntime)
-        val runtimes = turnBedrockJsonToListOfList(jsonResponse.response)
+        val runtimes = turnBedrockJsonToListOfList(jsonResponse.response).shuffled()
 
         for (runtime in runtimes) {
             val runtimeName = runtime[0]
@@ -296,6 +296,22 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
             "Query: Insert into runtime_impl (accelerator_type, accelerator_amount, location, runtime_id) values " +
                     "('gpu', 450, " +
                     "'onnx', 2);\n\n"
+        )
+        logger.info { "Insert onnx runtime_impl: $res" }
+
+        // Add a copy of the onnx runtime
+        res = runCommand("Query: Insert into runtime (name) values ('onnx2');\n\n")
+        logger.info { "Insert onnx runtime: $res" }
+        res = runCommand(
+            "Query: Insert into runtime_impl (accelerator_type, accelerator_amount, location, runtime_id) values " +
+                    "('myriad', 1, " +
+                    "'onnx-stick2', 3);\n\n"
+        )
+        logger.info { "Insert onnx runtime_impl: $res" }
+        res = runCommand(
+            "Query: Insert into runtime_impl (accelerator_type, accelerator_amount, location, runtime_id) values " +
+                    "('gpu', 450, " +
+                    "'onnx2', 3);\n\n"
         )
         logger.info { "Insert onnx runtime_impl: $res" }
 

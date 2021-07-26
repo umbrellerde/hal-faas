@@ -23,9 +23,9 @@ class Runner(accelerator: String, private val implInv: ImplementationAndInvocati
                 for (workload in allWorkloads) {
                     val nextInv = consumeHelper.consumeInvocation(
                         implInv.runtime.name, implInv.inv.configuration,
-                        // Wait 5s if this is only running 1 workload, otherwise wait shorter to ask for other
-                        //workloads
-                        timeout_s = if (allWorkloads.size == 1) 8 else 2
+                        // Wait longer if this is only running 1 workload, otherwise wait shorter to also ask for other
+                        // workloads
+                        timeout_s = if (allWorkloads.size == 1) 3 else 2
                     )
                     if (nextInv.status == 200) {
                         logger.info { "$pid: Calling $nextInv" }
@@ -38,8 +38,9 @@ class Runner(accelerator: String, private val implInv: ImplementationAndInvocati
 
                 if (!successfulRun) {
                     // try to find a new workload that has this runtime.
-                    logger.info { "$pid: Did not find any invocation, trying 20s for any config..." }
-                    val nextInv = consumeHelper.consumeInvocation(implInv.runtime.name, "*", 12)
+                    val timeout_anyconfig_s = 3
+                    logger.info { "$pid: Did not find any invocation, trying $timeout_anyconfig_s s for any config..." }
+                    val nextInv = consumeHelper.consumeInvocation(implInv.runtime.name, "*", timeout_anyconfig_s)
                     if (nextInv.status == 200) {
                         logger.debug { "$pid: Calling $nextInv" }
                         allWorkloads.add(0, nextInv.inv.configuration)
@@ -51,7 +52,7 @@ class Runner(accelerator: String, private val implInv: ImplementationAndInvocati
                         GlobalScope.launch {
                             noMa.registerFreedResources(accelerator, implInv.amount)
                         }
-                        break
+                        break // out of the while true
                     }
                 }
             }
