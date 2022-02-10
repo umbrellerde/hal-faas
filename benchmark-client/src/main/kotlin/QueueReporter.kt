@@ -1,3 +1,5 @@
+@file:OptIn(DelicateCoroutinesApi::class)
+
 import kotlinx.coroutines.*
 
 class QueueReporter(bc: BedrockClient, bw: BenchmarkWriter, delay: Long) {
@@ -7,9 +9,9 @@ class QueueReporter(bc: BedrockClient, bw: BenchmarkWriter, delay: Long) {
         while (isActive) {
             bw.collectQueueState(bc.getQueuedAmount())
             val nextQueryTime = start + i * delay
-            val delay = nextQueryTime - System.currentTimeMillis()
+            val nextQueryDelay = nextQueryTime - System.currentTimeMillis()
             i++
-            delay(delay)
+            delay(nextQueryDelay)
         }
     }
 

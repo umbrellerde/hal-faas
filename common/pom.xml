@@ -110,6 +110,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <maxmem>3000m</maxmem>
+                </configuration>
                 <executions>
                     <execution>
                         <id>compile</id>
@@ -177,11 +180,11 @@
             <scope>test</scope>
         </dependency>
         <!-- S3 -->
-        <dependency>
-            <groupId>io.minio</groupId>
-            <artifactId>minio</artifactId>
-            <version>8.3.5</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.minio</groupId>-->
+<!--            <artifactId>minio</artifactId>-->
+<!--            <version>8.3.5</version>-->
+<!--        </dependency>-->
         <!-- Command Line Parameters -->
         <dependency>
             <groupId>org.jetbrains.kotlinx</groupId>

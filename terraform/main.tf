@@ -13,6 +13,12 @@ provider "aws" {
   region  = var.aws_region
 }
 
+locals {
+  private_ssh = file("~/.ssh/id_ed25519")
+  public_ssh = file("~/.ssh/id_ed25519.pub")
+}
+
+
 // ----
 // VPC
 // ----
@@ -57,6 +63,11 @@ resource "aws_security_group" "allow_ssh_pub" {
   }
 }
 
+resource "aws_key_pair" "key" {
+  key_name = "${var.namespace}-main-key"
+  public_key = local.public_ssh
+}
+
 // ----
 // EC2 instances
 // ----
@@ -64,9 +75,9 @@ resource "aws_instance" "sut" {
   // Ubuntu in eu-central-1
   ami                       = "ami-0d527b8c289b4af7f"
   instance_type             = var.instance_type_sut
-  key_name                  = var.key_name
+  key_name                  = aws_key_pair.key.key_name
   subnet_id                 = module.vpc.public_subnets[0]
-  vpcvpc_security_group_ids = [aws_security_group.allow_ssh_pub.security_group_id]
+  vpc_security_group_ids = [aws_security_group.allow_ssh_pub.id]
 
   tags = {
     "Name" = "${var.namespace}-sut"
@@ -76,11 +87,23 @@ resource "aws_instance" "sut" {
   provisioner "file" {
     source      = "../noma/target/noma-1.0-SNAPSHOT-jar-with-dependencies.jar"
     destination = "~/noma.jar"
+
+
+//]
+# | Error: file provisioner error
+# │ 
+# │   with aws_instance.sut,
+# │   on main.tf line 87, in resource "aws_instance" "sut":
+# │   87:   provisioner "file" {
+# │ 
+# │ host for provisioner cannot be empty
+# ╵
+
     connection {
       type        = "ssh"
       user        = "ubuntu"
-      private_key = locals.private_ssh
-      host        = self.public_dns
+      private_key = local.private_ssh
+      host        = self.public_ip
     }
   }
 
@@ -88,14 +111,14 @@ resource "aws_instance" "sut" {
   provisioner "remote-exec" {
     inline = [
       "sudo apt-get update -qq",
-      "sudo apt-get -qq install default-jre python-pip",
+      "sudo apt-get -qq install default-jre pip",
       "pip install --user pipenv"
     ]
     connection {
       type        = "ssh"
       user        = "ubuntu"
-      private_key = locals.private_ssh
-      host        = self.public_dns
+      private_key = local.private_ssh
+      host        = self.public_ip
     }
   }
   #   provisioner "file" {

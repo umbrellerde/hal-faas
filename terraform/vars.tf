@@ -18,15 +18,6 @@ variable "aws_region" {
   default = "eu-central-1"
 }
 
-locals {
-  private_ssh = file("~/.ssh/id_ed25519")
-}
-
 variable "namespace" {
   default = "hal-faas"
-}
-
-variable "key_name" {
-  description = "AWS Key to use for Instances"
-  default = "????"
 }
