@@ -1,6 +1,10 @@
 # hal-faas
 Masters Thesis
 
+## Building
+
+Note that you need to use java-11 to compile this, since kotlin has problems supporting java-15 and newer
+
 ## Setting Up
 - Create a Minio that the worker nodes have access to
   - It needs a bucket `test` with the files `tinyyolov2-7.onnx` and `input_0_tiny.pb`
