@@ -17,6 +17,9 @@ Masters Thesis
     --s3SecretKey, -s3secret [minio-admin] { String }
     --s3Endpoint, -s3host [http://localhost:9000] { String }
 ```
+
+
+## Benchmarking Client
 - Start the Benchmarking Client `java -jar benchmark-client-1.0-SNAPSHOT-jar-with-dependencies.jar`. Options:
 ```
     --callbackBaseUrl, -callbackBase [localhost:3358] -> Address/Port that will be prepended to the callback url, without a / { String }
@@ -27,7 +30,5 @@ Masters Thesis
     --p2duration, -p2dur [30000] -> in milliseconds { Int }
     --runName, -name [fulltest] { String }
 ```
-
-
-java -jar noma-1.0-SNAPSHOT-jar-with-dependencies.jar -bedrockHost 130.149.158.80
-java -jar benchmark-client-1.0-SNAPSHOT-jar-with-dependencies.jar -bedrockHost 130.149.158.80
+The Client will collect its results into the results/ folder AFTER IT IS STOPPED(!), so make sure to copy these 
+files from the test client

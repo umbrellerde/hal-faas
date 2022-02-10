@@ -60,7 +60,7 @@ data class InvocationResult(
 ) {
     companion object {
         fun empty(): InvocationResult {
-            return InvocationResult("", "", -1 as Int, "", "", ArrayList(), null, -1, -1)
+            return InvocationResult("", "", -1, "", "", ArrayList(), null, -1, -1)
         }
     }
 }

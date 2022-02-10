@@ -6,21 +6,5 @@
         <language minSize="57" name="Kotlin" />
       </Languages>
     </inspection_tool>
-    <inspection_tool class="PyPep8NamingInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
-      <option name="ignoredBaseClasses">
-        <list>
-          <option value="unittest.TestCase" />
-          <option value="unittest.case.TestCase" />
-          <option value="http.server.BaseHTTPRequestHandler" />
-        </list>
-      </option>
-    </inspection_tool>
-    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
-      <option name="ignoredIdentifiers">
-        <list>
-          <option value="os._exit" />
-        </list>
-      </option>
-    </inspection_tool>
   </profile>
 </component>

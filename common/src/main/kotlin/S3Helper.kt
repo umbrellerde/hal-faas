@@ -3,7 +3,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import java.io.File
-import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 import java.util.zip.ZipFile
 
@@ -120,7 +119,7 @@ class S3Helper {
                         }
                     }
                 }
-                val startupSh = File(extractedFolder, "startup.sh").apply { setExecutable(true) }
+                File(extractedFolder, "startup.sh").apply { setExecutable(true) }
             } else {
                 logger.debug { "getRuntime: Runtime $runtimeName already downloaded" }
             }

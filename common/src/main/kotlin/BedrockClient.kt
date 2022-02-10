@@ -4,8 +4,6 @@ import com.beust.klaxon.Klaxon
 import kotlinx.coroutines.delay
 import mu.KotlinLogging
 import java.net.Socket
-import java.nio.charset.Charset
-import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.system.exitProcess
 
@@ -184,7 +182,7 @@ class BedrockClient(url: String = Settings.bedrockHost, port: Int = Settings.bed
                 line.startsWith("Content-Length: ") -> {
                     // This is the final line
                     val restLen = line.replace("Content-Length: ", "").toInt()
-                    val emptyLine = reader.readLine()
+                    reader.readLine()
                     if (restLen == 0 && status == 200) {
                         return ParsedResponse(204, "", debugInformation.toString())
                     }

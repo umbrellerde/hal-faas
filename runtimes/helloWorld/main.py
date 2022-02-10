@@ -5,6 +5,7 @@ import sys
 import time
 import socket
 
+
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, flush=True, **kwargs)
 
@@ -22,7 +23,7 @@ if __name__ == '__main__':
             if 'sleep' in request['params']:
                 time.sleep(request['params']['sleep'])
             else:
-                time.sleep(0.5)
+                time.sleep(0.05)
             end = time.time()
             result = {
                 'request': request,
@@ -38,7 +39,6 @@ if __name__ == '__main__':
                     'hostname': socket.gethostname()
                 }
             }
-            time.sleep(0.01)
             print(json.dumps(result), flush=True)
     except:
         exit(1)

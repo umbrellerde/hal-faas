@@ -1,8 +1,5 @@
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import mu.KotlinLogging
-import java.lang.RuntimeException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -78,7 +75,9 @@ class SingleInvocationConfig(private val runtime: String, private val config: St
             val bc = BedrockClient()
             while (isActive) {
                 // Wait up for a request. If there is none shutdown this coroutine.
-                val req = requests.poll(2, TimeUnit.MINUTES)
+                val req = withContext(Dispatchers.IO) {
+                    requests.poll(2, TimeUnit.MINUTES)
+                }
                 if(req == null) {
                     val itWasAFluke = synchronized(running) {
                         // Now look if there is an invocation
@@ -101,7 +100,9 @@ class SingleInvocationConfig(private val runtime: String, private val config: St
                         if (!worked) {
                             // We have the invocation but we can't give it to this request anymore
                             logger.error { "Rescheduling invocation $inv..." }
-                            val req = requests.poll(2, TimeUnit.MINUTES)
+                            val req = withContext(Dispatchers.IO) {
+                                requests.poll(2, TimeUnit.MINUTES)
+                            }
                             if (req == null) {
                                 // This is a prototype, just reschedule it.
                                 bc.createInvocation(inv.inv)

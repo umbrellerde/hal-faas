@@ -1,10 +1,8 @@
 import com.beust.klaxon.Klaxon
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import mu.KotlinLogging
 import java.io.File
-import java.lang.RuntimeException
 
 class Processes {
     companion object {
@@ -69,7 +67,9 @@ class Processes {
             if (process.inputStream == null) {
                 throw RuntimeException("Input Stream of process null. process=$process")
             }
-            return process.inputStream.bufferedReader().readLine()
+            return withContext(Dispatchers.IO) {
+                process.inputStream.bufferedReader().readLine()
+            }
         }
 
         fun stopProcess(name: String) {
