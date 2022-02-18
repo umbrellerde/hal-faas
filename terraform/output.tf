@@ -7,9 +7,9 @@ output "sut_connection_string" {
 }
 
 output "bedrock_pub_ip" {
-    value = aws_instance.bedrock.public_ip
+    value = [for instance in aws_instance.bedrock: "ssh ubuntu@${instance.public_ip}"]
 }
 
 output "benchmarker_connection_string" {
-    value = "ssh ubuntu@${aws_instance.bench.public_ip}"
+    value = [for instance in aws_instance.bench: "ssh ubuntu@${instance.public_ip}"]
 }

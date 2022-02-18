@@ -1,6 +1,6 @@
 variable "instance_type_sut" {
   description = "Type of the sut instances"
-  default     = "t2.micro"
+  default     = "inf1.xlarge"
 }
 
 variable "instance_type_bedrock" {
