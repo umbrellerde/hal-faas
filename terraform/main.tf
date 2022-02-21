@@ -108,45 +108,35 @@ resource "aws_instance" "sut" {
 
     // Install Updates / Pipenv / ...
   provisioner "remote-exec" {
-    inline = [
-      "sudo apt-get -qq update",
-      // TODO Package default-jre has no installation candidate
-      "sudo apt-get -qq install openjdk-11-jre",
-      "source activate pytorch_p37", 
-      "pip install -q --user pipenv ray tensorboardx",
-      "export PATH=$PATH:/home/ubuntu/.local/bin",
-      "pip --version",
-      "pipenv --version",
-      "java -version",
-      "cd ml_benchmark && python setup.py install"
-    ]
     connection {
       type        = "ssh"
       user        = "ubuntu"
       private_key = local.private_ssh
       host        = self.public_ip
     }
+
+    script = "setup-sut.sh"
   }
 
   // Copy the base folder over to the remote host so that everything is there
   // This must run after the remote-exec as only remote exec can wait until ssh is up
   provisioner "local-exec" {
     working_dir = "../"
-    command = "rsync -r . ubuntu@${self.public_ip}:/home/ubuntu/hal-faas"
+    command = "rsync -r . -e \"ssh -o StrictHostKeyChecking=no\" ubuntu@${self.public_ip}:/home/ubuntu/hal-faas"
   }
 
   // Copy the node manager executable onto the machine
-  provisioner "file" {
-    source      = "../noma/target/noma-1.0-SNAPSHOT-jar-with-dependencies.jar"
-    destination = "/home/ubuntu/hal-faas/noma.jar"
+  # provisioner "file" {
+  #   source      = "../noma/target/noma-1.0-SNAPSHOT-jar-with-dependencies.jar"
+  #   destination = "/home/ubuntu/hal-faas/noma.jar"
 
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.private_ssh
-      host        = self.public_ip
-    }
-  }
+  #   connection {
+  #     type        = "ssh"
+  #     user        = "ubuntu"
+  #     private_key = local.private_ssh
+  #     host        = self.public_ip
+  #   }
+  # }
 
   provisioner "file" {
     source      = "~/git/gebauerm/ml_benchmark"
