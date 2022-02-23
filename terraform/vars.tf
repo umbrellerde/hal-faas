@@ -1,6 +1,10 @@
+variable "ml_benchmark_location" {
+  default = "~/git/gebauerm/ml_benchmark"
+}
+
 variable "instance_type_sut" {
   description = "Type of the sut instances"
-  default     = "inf1.xlarge"
+  default     = "inf1.2xlarge"
 }
 
 variable "instance_type_bedrock" {

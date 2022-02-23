@@ -106,7 +106,19 @@ resource "aws_instance" "sut" {
   #   }
   # }
 
-    // Install Updates / Pipenv / ...
+  provisioner "file" {
+    source      = var.ml_benchmark_location
+    destination = "/home/ubuntu/ml_benchmark"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = local.private_ssh
+      host        = self.public_ip
+    }
+  }
+
+  // Install Updates / Pipenv / ...
   provisioner "remote-exec" {
     connection {
       type        = "ssh"
@@ -120,10 +132,10 @@ resource "aws_instance" "sut" {
 
   // Copy the base folder over to the remote host so that everything is there
   // This must run after the remote-exec as only remote exec can wait until ssh is up
-  provisioner "local-exec" {
-    working_dir = "../"
-    command = "rsync -r . -e \"ssh -o StrictHostKeyChecking=no\" ubuntu@${self.public_ip}:/home/ubuntu/hal-faas"
-  }
+  # provisioner "local-exec" {
+  #   working_dir = "../"
+  #   command = "rsync -r . -e \"ssh -o StrictHostKeyChecking=no\" ubuntu@${self.public_ip}:/home/ubuntu/hal-faas"
+  # }
 
   // Copy the node manager executable onto the machine
   # provisioner "file" {
@@ -137,18 +149,6 @@ resource "aws_instance" "sut" {
   #     host        = self.public_ip
   #   }
   # }
-
-  provisioner "file" {
-    source      = "~/git/gebauerm/ml_benchmark"
-    destination = "/home/ubuntu/ml_benchmark"
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.private_ssh
-      host        = self.public_ip
-    }
-  }
 }
 
 resource "aws_instance" "bedrock" {
