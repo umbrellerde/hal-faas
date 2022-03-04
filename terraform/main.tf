@@ -72,7 +72,7 @@ resource "aws_security_group" "allow_ssh_pub" {
 }
 
 resource "aws_key_pair" "key" {
-  key_name   = "${var.namespace}-main-key"
+  key_name   = "${var.namespace}-main-key-blabla"
   public_key = local.public_ssh
 }
 
@@ -89,6 +89,12 @@ resource "aws_instance" "sut" {
   key_name               = aws_key_pair.key.key_name
   subnet_id              = module.vpc.public_subnets[0]
   vpc_security_group_ids = [aws_security_group.allow_ssh_pub.id]
+
+  root_block_device {
+    //device_name = "/dev/nvme0n1p1"
+    volume_size = 200
+    volume_type = "gp3"
+  }
 
   tags = {
     "Name" = "${var.namespace}-sut"
